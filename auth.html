@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WDB 날씨 서비스 - 로그인/회원가입</title>
+  <link rel="stylesheet" href="./auth.css" />
+</head>
+<body>
+  <header class="site-header">
+    <h1>WDB 날씨 서비스</h1>
+    <p class="sub">사용자 맞춤 지역 기반 기상예보</p>
+  </header>
+
+  <main class="auth-container">
+    <!-- CSS-Only Tabs -->
+    <input type="radio" name="auth-tab" id="tab-login" class="visually-hidden" checked />
+    <input type="radio" name="auth-tab" id="tab-signup" class="visually-hidden" />
+
+    <div class="tabbar">
+      <label for="tab-login">로그인</label>
+      <label for="tab-signup">회원가입</label>
+    </div>
+
+    <section class="panel panel-login">
+      <form method="get" action="dashboard.html">
+        <div class="field">
+          <label for="login-id">아이디/이메일</label>
+          <input id="login-id" name="identifier" type="text" required />
+        </div>
+        <div class="field">
+          <label for="login-pw">비밀번호</label>
+          <input id="login-pw" name="password" type="password" required />
+        </div>
+        <button class="primary" type="submit">로그인</button>
+      </form>
+    </section>
+
+    <section class="panel panel-signup">
+      <form method="get" action="dashboard.html">
+        <div class="field">
+          <label for="reg-name">이름</label>
+          <input id="reg-name" name="full_name" type="text" required />
+        </div>
+        <div class="field">
+          <label for="reg-email">이메일</label>
+          <input id="reg-email" name="email" type="email" required />
+        </div>
+        <div class="field">
+          <label for="reg-pw">비밀번호</label>
+          <input id="reg-pw" name="password" type="password" required />
+        </div>
+        <div class="field">
+          <label for="reg-pw2">비밀번호 확인</label>
+          <input id="reg-pw2" name="password_confirm" type="password" required />
+        </div>
+        <div class="field">
+          <label for="reg-region">기본 지역</label>
+          <input id="reg-region" name="default_region" type="text" placeholder="예: 서울특별시" />
+        </div>
+        <button class="primary" type="submit">회원가입</button>
+      </form>
+    </section>
+  </main>
+</body>
+</html>
+
+
