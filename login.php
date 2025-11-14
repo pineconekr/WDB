@@ -65,7 +65,7 @@ $stmt->close();
 // 비밀번호 검증
 if ($pwd === $db_pwd) {
     $_SESSION['user_id'] = $uid;
-    alert_redirect($uid . "님, 환영합니다!", "dashboard.html");
+    alert_redirect($uid . "님, 환영합니다!", "dashboard.php");
 } else {
     alert_back("비밀번호가 올바르지 않습니다.");
 }
