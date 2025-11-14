@@ -69,12 +69,12 @@ if ($stmt->num_rows > 0) {
 }
 $stmt->close();
 
-// 비밀번호 암호화 (bcrypt)
-// $hashed_pwd = password_hash($pwd, PASSWORD_DEFAULT);
+//비밀번호 암호화 (bcrypt)
+$hashed_pwd = password_hash($pwd, PASSWORD_DEFAULT);
 
 // DB에 회원정보 저장
 $stmt = $conn->prepare("INSERT INTO users (uid, pwd) VALUES (?, ?)");
-$stmt->bind_param("ss", $uid, $pwd); //암호화 비밀번호 사용시 $pwd -> $hashed_pwd로 변경
+$stmt->bind_param("ss", $uid, $hashed_pwd); //암호화 비밀번호 사용시 $pwd -> $hashed_pwd로 변경
 
 if ($stmt->execute()) {
     alert_redirect("회원가입이 완료되었습니다. 로그인 해주세요.", "auth.html#tab-login");

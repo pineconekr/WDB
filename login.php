@@ -57,10 +57,12 @@ if ($stmt->num_rows === 0) {
     alert_back("존재하지 않는 아이디입니다.");
 }
 
+/*
 // DB에 저장된 비밀번호를 $db_pwd 변수에 바인딩
 $stmt->bind_result($db_pwd);
 $stmt->fetch();
 $stmt->close();
+
 
 // 비밀번호 검증
 if ($pwd === $db_pwd) {
@@ -69,19 +71,19 @@ if ($pwd === $db_pwd) {
 } else {
     alert_back("비밀번호가 올바르지 않습니다.");
 }
+*/
 
-/*
 $stmt->bind_result($hashed_pwd);
 $stmt->fetch();
 
 // 비밀번호 검증
 if (password_verify($pwd, $hashed_pwd)) {
-    echo "로그인 성공!<br>";
-    echo "<a href='dashboard.html'>대시보드로 이동</a>";
+    $_SESSION['user_id'] = $uid;
+    alert_redirect($uid . "님, 환영합니다!", "dashboard.php");
 } else {
-    echo "비밀번호가 올바르지 않습니다.";
+    alert_back("비밀번호가 올바르지 않습니다.");
 }
-*/
+
 
 $conn->close();
 ?>
