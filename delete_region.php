@@ -32,7 +32,7 @@ if (!isset($_POST['region_id']) || empty($_POST['region_id'])) {
     alert_back("삭제할 지역 ID가 없습니다.");
 }
 
-$region_id = (int)$_POST['region_id']; // (예: 5)
+$region_id = (int)$_POST['region_id']; // (예: 5 )
 
 // 3. DB 연결
 $host = "localhost";
