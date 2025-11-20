@@ -27,18 +27,18 @@ $sql_alter = "ALTER TABLE users
 
 echo "<h3>1. 'users' 테이블 정리 (열 삭제) 시도...</h3>";
 
-if ($conn->query($sql_alter) === TRUE) {
-    echo "<p style='color:green;'>✅ 'users' 테이블에서 3개 열(region_name 등) 삭제 성공!</p>";
-} else {
-    // [중요] 1091 오류는 "이미 없다"는 뜻이므로, 오류가 아닙니다.
-    if ($conn->errno == 1091) {
-        echo "<p style='color:orange;'> 경고: 'users' 테이블에 해당 열이 이미 없습니다. (오류 메시지: " . htmlspecialchars($conn->error) . ")</p>";
-        echo "<p> 이미 정리되었으므로, 다음 단계로 정상 진행합니다.</p>";
-    } else {
-        // 그 외 다른 심각한 오류
-        echo "<p style='color:red;'> 'users' 테이블 정리 실패: " . htmlspecialchars($conn->error) . "</p>";
-    }
-}
+// if ($conn->query($sql_alter) === TRUE) {
+//     echo "<p style='color:green;'>✅ 'users' 테이블에서 3개 열(region_name 등) 삭제 성공!</p>";
+// } else {
+//     // [중요] 1091 오류는 "이미 없다"는 뜻이므로, 오류가 아닙니다.
+//     if ($conn->errno == 1091) {
+//         echo "<p style='color:orange;'> 경고: 'users' 테이블에 해당 열이 이미 없습니다. (오류 메시지: " . htmlspecialchars($conn->error) . ")</p>";
+//         echo "<p> 이미 정리되었으므로, 다음 단계로 정상 진행합니다.</p>";
+//     } else {
+//         // 그 외 다른 심각한 오류
+//         echo "<p style='color:red;'> 'users' 테이블 정리 실패: " . htmlspecialchars($conn->error) . "</p>";
+//     }
+// }
 
 // 'user_regions' 새 테이블 생성
 $sql_create = "CREATE TABLE user_regions (

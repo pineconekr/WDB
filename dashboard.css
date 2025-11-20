@@ -364,6 +364,27 @@ textarea {
   font-size: 0.95rem;
 }
 
+/* 디지털 시계 */
+.digital-clock-widget {
+  margin-bottom: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.clock-time {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+  letter-spacing: -1px;
+}
+
+.clock-date {
+  margin-top: 4px;
+  font-size: 0.9rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
 @media (max-width: 1080px) {
   .dashboard-layout {
     flex-direction: column;
@@ -393,4 +414,3 @@ textarea {
     gap: 16px;
   }
 }
-

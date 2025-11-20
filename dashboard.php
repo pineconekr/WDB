@@ -2,8 +2,8 @@
 session_start();
 
 if (!isset($_SESSION['user_id'])) {
-    header("Location: auth.html");
-    exit;
+  header("Location: auth.html");
+  exit;
 }
 
 require_once 'RecommendClothes.php';
@@ -20,7 +20,7 @@ $conn = new mysqli($host, $user, $pass, $dbname);
 $conn->set_charset("utf8mb4");
 
 if ($conn->connect_error) {
-    die("DB 연결 실패: " . $conn->connect_error);
+  die("DB 연결 실패: " . $conn->connect_error);
 }
 
 $saved_regions = fetchSavedRegions($conn, $user_id);
@@ -32,330 +32,332 @@ $current_weather_detail = null;
 $google_chart_data_json = 'null';
 $profile_region_text = "--";
 $active_region_id = null;
+$outfit_message = "<span style='color: #e74c3c; font-weight: bold;'>⚠️ 저장된 지역이 없습니다.</span><br>좌측 사이드바에서 지역을 추가해 주세요.";
 
 if (!empty($saved_regions)) {
-    $main_region = null;
-    if ($requested_region_id !== null) {
-        foreach ($saved_regions as $region) {
-            if ((int) $region['id'] === $requested_region_id) {
-                $main_region = $region;
-                break;
-            }
-        }
+  $main_region = null;
+  if ($requested_region_id !== null) {
+    foreach ($saved_regions as $region) {
+      if ((int) $region['id'] === $requested_region_id) {
+        $main_region = $region;
+        break;
+      }
     }
+  }
 
-    if ($main_region === null) {
-        $main_region = $saved_regions[0];
+  if ($main_region === null) {
+    $main_region = $saved_regions[0];
+  }
+
+  $active_region_id = (int) $main_region['id'];
+  $main_region_name = $main_region['region_name'];
+  $profile_region_text = $main_region_name;
+
+  $weatherPayload = fetchWeatherData((int) $main_region['region_nx'], (int) $main_region['region_ny']);
+  $google_chart_data_json = $weatherPayload['chart_json'];
+  $current_weather_info = $weatherPayload['current_info'];
+  $current_weather_detail = $weatherPayload['current_detail'];
+
+  if (isset($current_weather_detail['temperature'])) {
+    if (function_exists('getClothingRecommendation')) {
+      $outfit_message = getClothingRecommendation((float) $current_weather_detail['temperature']);
     }
-
-    $active_region_id = (int) $main_region['id'];
-    $main_region_name = $main_region['region_name'];
-    $profile_region_text = $main_region_name;
-
-    $weatherPayload = fetchWeatherData((int) $main_region['region_nx'], (int) $main_region['region_ny']);
-    $google_chart_data_json = $weatherPayload['chart_json'];
-    $current_weather_info = $weatherPayload['current_info'];
-    $current_weather_detail = $weatherPayload['current_detail'];
-
-    if (isset($current_weather_detail['temperature'])) {
-        if (function_exists('getClothingRecommendation')) {
-            $outfit_message = getClothingRecommendation((float)$current_weather_detail['temperature']);
-        }
-    }
+  }
 
 }
 
 $conn->close();
 
 $regions_list_for_form = [
-    "서울" => "서울/60/127",
-    "부산" => "부산/98/76",
-    "대구" => "대구/89/90",
-    "인천" => "인천/55/124",
-    "광주" => "광주/58/74",
-    "대전" => "대전/67/100",
-    "울산" => "울산/102/84",
-    "경기" => "수원/60/121",
-    "강원" => "춘천/73/134",
-    "충북" => "청주/69/107",
-    "충남" => "홍성/68/100",
-    "전북" => "전주/63/89",
-    "전남" => "무안/51/67",
-    "경북" => "안동/91/106",
-    "경남" => "창원/90/77",
-    "제주" => "제주/52/38"
+  "서울" => "서울/60/127",
+  "부산" => "부산/98/76",
+  "대구" => "대구/89/90",
+  "인천" => "인천/55/124",
+  "광주" => "광주/58/74",
+  "대전" => "대전/67/100",
+  "울산" => "울산/102/84",
+  "경기" => "수원/60/121",
+  "강원" => "춘천/73/134",
+  "충북" => "청주/69/107",
+  "충남" => "홍성/68/100",
+  "전북" => "전주/63/89",
+  "전남" => "무안/51/67",
+  "경북" => "안동/91/106",
+  "경남" => "창원/90/77",
+  "제주" => "제주/52/38"
 ];
 
 function fetchSavedRegions($conn, $userId)
 {
-    $stmt = $conn->prepare("SELECT id, region_name, region_nx, region_ny FROM user_regions WHERE user_uid = ?");
-    $stmt->bind_param("s", $userId);
-    $stmt->execute();
-    $result = $stmt->get_result();
+  $stmt = $conn->prepare("SELECT id, region_name, region_nx, region_ny FROM user_regions WHERE user_uid = ?");
+  $stmt->bind_param("s", $userId);
+  $stmt->execute();
+  $result = $stmt->get_result();
 
-    $regions = [];
-    while ($row = $result->fetch_assoc()) {
-        $regions[] = $row;
-    }
+  $regions = [];
+  while ($row = $result->fetch_assoc()) {
+    $regions[] = $row;
+  }
 
-    $stmt->close();
+  $stmt->close();
 
-    return $regions;
+  return $regions;
 }
 
 function findRegionById($conn, $regionId, $userId)
 {
-    $stmt = $conn->prepare("SELECT id, region_name, region_nx, region_ny FROM user_regions WHERE id = ? AND user_uid = ?");
-    $stmt->bind_param("is", $regionId, $userId);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $region = $result->fetch_assoc();
-    $stmt->close();
+  $stmt = $conn->prepare("SELECT id, region_name, region_nx, region_ny FROM user_regions WHERE id = ? AND user_uid = ?");
+  $stmt->bind_param("is", $regionId, $userId);
+  $stmt->execute();
+  $result = $stmt->get_result();
+  $region = $result->fetch_assoc();
+  $stmt->close();
 
-    return $region ?: null;
+  return $region ?: null;
 }
 
 function fetchWeatherData($nx, $ny)
 {
-    $serviceKey = "bbc2f96d627a4f50f836e44d783c2cb40633431aae9315876336c6bd9afd8432";
-    $endpoint = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst";
+  $serviceKey = "bbc2f96d627a4f50f836e44d783c2cb40633431aae9315876336c6bd9afd8432";
+  $endpoint = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst";
 
-    list($base_date, $base_time) = resolveBaseDateTime();
+  list($base_date, $base_time) = resolveBaseDateTime();
 
-    $params = [
-        'ServiceKey' => $serviceKey,
-        'dataType'   => 'JSON',
-        'base_date'  => $base_date,
-        'base_time'  => $base_time,
-        'nx'         => $nx,
-        'ny'         => $ny,
-        'pageNo'     => 1,
-        'numOfRows'  => 300
-    ];
+  $params = [
+    'ServiceKey' => $serviceKey,
+    'dataType' => 'JSON',
+    'base_date' => $base_date,
+    'base_time' => $base_time,
+    'nx' => $nx,
+    'ny' => $ny,
+    'pageNo' => 1,
+    'numOfRows' => 300
+  ];
 
-    $requestUrl = $endpoint . '?' . http_build_query($params);
+  $requestUrl = $endpoint . '?' . http_build_query($params);
 
-    $ch = curl_init($requestUrl);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+  $ch = curl_init($requestUrl);
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+  curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+  curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curlError = curl_error($ch);
-    curl_close($ch);
+  $response = curl_exec($ch);
+  $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+  $curlError = curl_error($ch);
+  curl_close($ch);
 
-    if ($response === false) {
-        $message = $curlError ? $curlError : '네트워크 오류';
-        return [
-            'chart_json' => 'null',
-            'current_info' => "날씨 API 호출 실패: {$message}",
-            'current_detail' => null
-        ];
-    }
-
-    if ($httpCode !== 200) {
-        return [
-            'chart_json' => 'null',
-            'current_info' => "날씨 API 호출 실패: HTTP Code {$httpCode}",
-            'current_detail' => null
-        ];
-    }
-
-    $jsonData = json_decode($response, true);
-
-    if (!isset($jsonData['response']['header']['resultCode']) || $jsonData['response']['header']['resultCode'] !== '00') {
-        $error_msg = $jsonData['response']['header']['resultMsg'] ?? 'API 응답 오류';
-        return [
-            'chart_json' => 'null',
-            'current_info' => "날씨 API 오류: {$error_msg}",
-            'current_detail' => null
-        ];
-    }
-
-    $items = $jsonData['response']['body']['items']['item'] ?? [];
-    list($chartRows, $currentInfo, $currentDetails) = transformWeatherItems($items);
-
-    if (empty($chartRows)) {
-        return [
-            'chart_json' => 'null',
-            'current_info' => $currentInfo,
-            'current_detail' => $currentDetails
-        ];
-    }
-
-    $chartJson = json_encode($chartRows, JSON_UNESCAPED_UNICODE);
-    if ($chartJson === false) {
-        $chartJson = 'null';
-    }
-
+  if ($response === false) {
+    $message = $curlError ? $curlError : '네트워크 오류';
     return [
-        'chart_json' => $chartJson,
-        'current_info' => $currentInfo,
-        'current_detail' => $currentDetails
+      'chart_json' => 'null',
+      'current_info' => "날씨 API 호출 실패: {$message}",
+      'current_detail' => null
     ];
+  }
+
+  if ($httpCode !== 200) {
+    return [
+      'chart_json' => 'null',
+      'current_info' => "날씨 API 호출 실패: HTTP Code {$httpCode}",
+      'current_detail' => null
+    ];
+  }
+
+  $jsonData = json_decode($response, true);
+
+  if (!isset($jsonData['response']['header']['resultCode']) || $jsonData['response']['header']['resultCode'] !== '00') {
+    $error_msg = $jsonData['response']['header']['resultMsg'] ?? 'API 응답 오류';
+    return [
+      'chart_json' => 'null',
+      'current_info' => "날씨 API 오류: {$error_msg}",
+      'current_detail' => null
+    ];
+  }
+
+  $items = $jsonData['response']['body']['items']['item'] ?? [];
+  list($chartRows, $currentInfo, $currentDetails) = transformWeatherItems($items);
+
+  if (empty($chartRows)) {
+    return [
+      'chart_json' => 'null',
+      'current_info' => $currentInfo,
+      'current_detail' => $currentDetails
+    ];
+  }
+
+  $chartJson = json_encode($chartRows, JSON_UNESCAPED_UNICODE);
+  if ($chartJson === false) {
+    $chartJson = 'null';
+  }
+
+  return [
+    'chart_json' => $chartJson,
+    'current_info' => $currentInfo,
+    'current_detail' => $currentDetails
+  ];
 }
 
 function transformWeatherItems($items)
 {
-    $weatherData = [];
+  $weatherData = [];
 
-    foreach ($items as $item) {
-        $time = isset($item['fcstTime']) ? $item['fcstTime'] : null;
-        $category = isset($item['category']) ? $item['category'] : null;
-        $value = isset($item['fcstValue']) ? $item['fcstValue'] : null;
+  foreach ($items as $item) {
+    $time = isset($item['fcstTime']) ? $item['fcstTime'] : null;
+    $category = isset($item['category']) ? $item['category'] : null;
+    $value = isset($item['fcstValue']) ? $item['fcstValue'] : null;
 
-        if ($time === null || $category === null) {
-            continue;
-        }
-
-        if (!in_array($category, ['TMP', 'POP', 'REH', 'WSD', 'SKY', 'PTY'], true)) {
-            continue;
-        }
-
-        if (!isset($weatherData[$time])) {
-            $weatherData[$time] = [];
-        }
-
-        $weatherData[$time][$category] = $value;
+    if ($time === null || $category === null) {
+      continue;
     }
 
-    if (empty($weatherData)) {
-        return [[], "날씨 데이터가 없습니다.", null];
+    if (!in_array($category, ['TMP', 'POP', 'REH', 'WSD', 'SKY', 'PTY'], true)) {
+      continue;
     }
 
-    ksort($weatherData, SORT_STRING);
-
-    $chartRows = [
-        ['시간', '기온(℃)', '강수확률(%)', '습도(%)']
-    ];
-    $currentInfo = "날씨 데이터가 없습니다.";
-    $currentDetails = null;
-    $count = 0;
-
-    foreach ($weatherData as $time => $categories) {
-        if ($count === 0) {
-            $currentInfo = buildCurrentWeatherText($categories);
-            $currentDetails = buildCurrentDetail($categories, $time);
-        }
-
-        $chartRows[] = [
-            substr($time, 0, 2) . '시',
-            isset($categories['TMP']) ? (float) $categories['TMP'] : null,
-            isset($categories['POP']) ? (int) $categories['POP'] : null,
-            isset($categories['REH']) ? (int) $categories['REH'] : null
-        ];
-
-        $count++;
-
-        if ($count >= 12) {
-            break;
-        }
+    if (!isset($weatherData[$time])) {
+      $weatherData[$time] = [];
     }
 
+    $weatherData[$time][$category] = $value;
+  }
+
+  if (empty($weatherData)) {
+    return [[], "날씨 데이터가 없습니다.", null];
+  }
+
+  ksort($weatherData, SORT_STRING);
+
+  $chartRows = [
+    ['시간', '기온(℃)', '강수확률(%)', '습도(%)']
+  ];
+  $currentInfo = "날씨 데이터가 없습니다.";
+  $currentDetails = null;
+  $count = 0;
+
+  foreach ($weatherData as $time => $categories) {
     if ($count === 0) {
-        return [[], "날씨 데이터가 없습니다.", null];
+      $currentInfo = buildCurrentWeatherText($categories);
+      $currentDetails = buildCurrentDetail($categories, $time);
     }
 
-    return [$chartRows, $currentInfo, $currentDetails];
+    $chartRows[] = [
+      substr($time, 0, 2) . '시',
+      isset($categories['TMP']) ? (float) $categories['TMP'] : null,
+      isset($categories['POP']) ? (int) $categories['POP'] : null,
+      isset($categories['REH']) ? (int) $categories['REH'] : null
+    ];
+
+    $count++;
+
+    if ($count >= 12) {
+      break;
+    }
+  }
+
+  if ($count === 0) {
+    return [[], "날씨 데이터가 없습니다.", null];
+  }
+
+  return [$chartRows, $currentInfo, $currentDetails];
 }
 
 function buildCurrentWeatherText($categories)
 {
-    $temp = isset($categories['TMP']) ? $categories['TMP'] : '?';
-    $sky = isset($categories['SKY']) ? $categories['SKY'] : null;
-    $pty = isset($categories['PTY']) ? $categories['PTY'] : null;
-    $weatherText = '맑음';
+  $temp = isset($categories['TMP']) ? $categories['TMP'] : '?';
+  $sky = isset($categories['SKY']) ? $categories['SKY'] : null;
+  $pty = isset($categories['PTY']) ? $categories['PTY'] : null;
+  $weatherText = '맑음';
 
-    if ($pty !== null && $pty !== '0') {
-        switch ($pty) {
-            case '1':
-                $weatherText = '비';
-                break;
-            case '2':
-                $weatherText = '비/눈';
-                break;
-            case '3':
-                $weatherText = '눈';
-                break;
-            case '4':
-                $weatherText = '소나기';
-                break;
-            default:
-                $weatherText = '강수';
-        }
-    } else {
-        if ($sky === '3') {
-            $weatherText = '구름많음';
-        } elseif ($sky === '4') {
-            $weatherText = '흐림';
-        }
+  if ($pty !== null && $pty !== '0') {
+    switch ($pty) {
+      case '1':
+        $weatherText = '비';
+        break;
+      case '2':
+        $weatherText = '비/눈';
+        break;
+      case '3':
+        $weatherText = '눈';
+        break;
+      case '4':
+        $weatherText = '소나기';
+        break;
+      default:
+        $weatherText = '강수';
     }
+  } else {
+    if ($sky === '3') {
+      $weatherText = '구름많음';
+    } elseif ($sky === '4') {
+      $weatherText = '흐림';
+    }
+  }
 
-    return "현재: {$temp}℃ / {$weatherText}";
+  return "현재: {$temp}℃ / {$weatherText}";
 }
 
 function buildCurrentDetail($categories, $time)
 {
-    return [
-        'time' => $time,
-        'temperature' => isset($categories['TMP']) ? (float) $categories['TMP'] : null,
-        'pop' => isset($categories['POP']) ? (int) $categories['POP'] : null,
-        'reh' => isset($categories['REH']) ? (int) $categories['REH'] : null,
-        'wsd' => isset($categories['WSD']) ? (float) $categories['WSD'] : null
-    ];
+  return [
+    'time' => $time,
+    'temperature' => isset($categories['TMP']) ? (float) $categories['TMP'] : null,
+    'pop' => isset($categories['POP']) ? (int) $categories['POP'] : null,
+    'reh' => isset($categories['REH']) ? (int) $categories['REH'] : null,
+    'wsd' => isset($categories['WSD']) ? (float) $categories['WSD'] : null
+  ];
 }
 
 function formatWeatherMetric($value, $unit = '', $decimals = null)
 {
-    if ($value === null || $value === '' || !is_numeric($value)) {
-        return $unit ? "--{$unit}" : "--";
-    }
+  if ($value === null || $value === '' || !is_numeric($value)) {
+    return $unit ? "--{$unit}" : "--";
+  }
 
-    $number = (float) $value;
-    if ($decimals !== null) {
-        $display = number_format($number, max(0, (int) $decimals), '.', '');
-    } else {
-        $display = ($number == (int) $number) ? (string) (int) $number : (string) $number;
-    }
+  $number = (float) $value;
+  if ($decimals !== null) {
+    $display = number_format($number, max(0, (int) $decimals), '.', '');
+  } else {
+    $display = ($number == (int) $number) ? (string) (int) $number : (string) $number;
+  }
 
-    return $display . $unit;
+  return $display . $unit;
 }
 
 function resolveBaseDateTime()
 {
-    $timezone = new DateTimeZone('Asia/Seoul');
-    $now = new DateTimeImmutable('now', $timezone);
-    $currentTime = $now->format('Hi');
-    $baseDate = $now->format('Ymd');
-    $baseTime = '2300';
+  $timezone = new DateTimeZone('Asia/Seoul');
+  $now = new DateTimeImmutable('now', $timezone);
+  $currentTime = $now->format('Hi');
+  $baseDate = $now->format('Ymd');
+  $baseTime = '2300';
 
-    $baseTimesMap = [
-        '0210' => '0200',
-        '0510' => '0500',
-        '0810' => '0800',
-        '1110' => '1100',
-        '1410' => '1400',
-        '1710' => '1700',
-        '2010' => '2000',
-        '2310' => '2300'
-    ];
+  $baseTimesMap = [
+    '0210' => '0200',
+    '0510' => '0500',
+    '0810' => '0800',
+    '1110' => '1100',
+    '1410' => '1400',
+    '1710' => '1700',
+    '2010' => '2000',
+    '2310' => '2300'
+  ];
 
-    foreach ($baseTimesMap as $threshold => $base) {
-        if ($currentTime >= $threshold) {
-            $baseTime = $base;
-        }
+  foreach ($baseTimesMap as $threshold => $base) {
+    if ($currentTime >= $threshold) {
+      $baseTime = $base;
     }
+  }
 
-    if ($currentTime < '0210') {
-        $baseDate = $now->modify('-1 day')->format('Ymd');
-    }
+  if ($currentTime < '0210') {
+    $baseDate = $now->modify('-1 day')->format('Ymd');
+  }
 
-    return [$baseDate, $baseTime];
+  return [$baseDate, $baseTime];
 }
 ?>
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -363,7 +365,7 @@ function resolveBaseDateTime()
   <link rel="stylesheet" href="./dashboard.css" />
 
   <script>
-    window.addEventListener('pageshow', function(event) {
+    window.addEventListener('pageshow', function (event) {
       if (event.persisted) {
         window.location.reload();
       }
@@ -374,7 +376,7 @@ function resolveBaseDateTime()
   <script type="text/javascript">
     const chartData = <?php echo $google_chart_data_json; ?>;
 
-    google.charts.load('current', {'packages':['corechart']});
+    google.charts.load('current', { 'packages': ['corechart'] });
     google.charts.setOnLoadCallback(() => drawChart(chartData));
 
     function drawChart(sourceData) {
@@ -436,15 +438,51 @@ function resolveBaseDateTime()
       const chart = new google.visualization.ComboChart(chartDiv);
       chart.draw(data, options);
     }
+
+    function updateDigitalClock() {
+      const now = new Date();
+
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const timeString = `${hours}:${minutes}`;
+
+      const month = now.getMonth() + 1;
+      const date = now.getDate();
+      const days = ['일', '월', '화', '수', '목', '금', '토'];
+      const dayName = days[now.getDay()];
+      const dateString = `${month}월 ${date}일 (${dayName})`;
+
+      // DOM 업데이트
+      const timeEl = document.getElementById('clock-time');
+      const dateEl = document.getElementById('clock-date');
+
+      if (timeEl) timeEl.textContent = timeString;
+      if (dateEl) dateEl.textContent = dateString;
+    }
+
+    // 페이지 로드 시 즉시 실행 및 1초마다 갱신
+    document.addEventListener('DOMContentLoaded', () => {
+      updateDigitalClock();
+      setInterval(updateDigitalClock, 1000);
+    });
   </script>
 </head>
+
 <body>
   <div class="dashboard-layout">
     <aside class="sidebar">
       <section class="summary-panel">
         <p class="login-state"><?php echo htmlspecialchars($user_id, ENT_QUOTES, 'UTF-8'); ?>님 환영합니다.</p>
+
+        <div class="digital-clock-widget">
+          <div id="clock-time" class="clock-time">--:--</div>
+          <div id="clock-date" class="clock-date">--월 --일 (-)</div>
+        </div>
+
         <h2 id="activeRegionTitle"><?php echo htmlspecialchars($main_region_name, ENT_QUOTES, 'UTF-8'); ?></h2>
-        <p class="current-info" id="activeRegionInfo"><?php echo htmlspecialchars($current_weather_info, ENT_QUOTES, 'UTF-8'); ?></p>
+        <p class="current-info" id="activeRegionInfo">
+          <?php echo htmlspecialchars($current_weather_info, ENT_QUOTES, 'UTF-8'); ?>
+        </p>
       </section>
 
       <section class="region-list">
@@ -455,19 +493,17 @@ function resolveBaseDateTime()
           <ul>
             <?php foreach ($saved_regions as $region): ?>
               <?php
-                $regionId = (int) $region['id'];
-                $isActive = $active_region_id === $regionId;
+              $regionId = (int) $region['id'];
+              $isActive = $active_region_id === $regionId;
               ?>
               <li data-region-id="<?php echo $regionId; ?>">
-                <span class="region-name"><?php echo htmlspecialchars($region['region_name'], ENT_QUOTES, 'UTF-8'); ?></span>
+                <span
+                  class="region-name"><?php echo htmlspecialchars($region['region_name'], ENT_QUOTES, 'UTF-8'); ?></span>
                 <div class="region-actions">
                   <form class="set-region-form" method="GET">
                     <input type="hidden" name="region_id" value="<?php echo $regionId; ?>">
-                    <button
-                      type="submit"
-                      class="set-region-btn<?php echo $isActive ? ' active' : ''; ?>"
-                      aria-label="선택 지역 변경"
-                    >
+                    <button type="submit" class="set-region-btn<?php echo $isActive ? ' active' : ''; ?>"
+                      aria-label="선택 지역 변경">
                       보기
                     </button>
                   </form>
@@ -535,30 +571,36 @@ function resolveBaseDateTime()
         <div class="content-body">
           <section class="weather-card">
             <h2>
-                <?php echo htmlspecialchars(($active_region_id !== null) ? $main_region_name : '지역 미설정', ENT_QUOTES, 'UTF-8'); ?> 현재 날씨
+              <?php echo htmlspecialchars(($active_region_id !== null) ? $main_region_name : '지역 미설정', ENT_QUOTES, 'UTF-8'); ?>
+              현재 날씨
             </h2>
             <div class="weather-info">
               <div class="weather-main">
-                <div class="temperature" id="currentTemperature"><?php echo formatWeatherMetric($current_weather_detail['temperature'] ?? null, '°C', 0); ?></div>
+                <div class="temperature" id="currentTemperature">
+                  <?php echo formatWeatherMetric($current_weather_detail['temperature'] ?? null, '°C', 0); ?>
+                </div>
                 <div class="location" id="currentLocation">
                   <?php
-                    $locationText = ($active_region_id !== null) ? $main_region_name : '지역을 설정해주세요';
-                    echo htmlspecialchars($locationText, ENT_QUOTES, 'UTF-8');
+                  $locationText = ($active_region_id !== null) ? $main_region_name : '지역을 설정해주세요';
+                  echo htmlspecialchars($locationText, ENT_QUOTES, 'UTF-8');
                   ?>
                 </div>
               </div>
               <div class="weather-details">
                 <div class="detail-item">
                   <span class="detail-label">강수확률</span>
-                    <span class="detail-value" id="currentPop"><?php echo formatWeatherMetric($current_weather_detail['pop'] ?? null, '%', 0); ?></span>
+                  <span class="detail-value"
+                    id="currentPop"><?php echo formatWeatherMetric($current_weather_detail['pop'] ?? null, '%', 0); ?></span>
                 </div>
                 <div class="detail-item">
                   <span class="detail-label">습도</span>
-                  <span class="detail-value" id="currentReh"><?php echo formatWeatherMetric($current_weather_detail['reh'] ?? null, '%', 0); ?></span>
+                  <span class="detail-value"
+                    id="currentReh"><?php echo formatWeatherMetric($current_weather_detail['reh'] ?? null, '%', 0); ?></span>
                 </div>
                 <div class="detail-item">
                   <span class="detail-label">풍속</span>
-                  <span class="detail-value" id="currentWind"><?php echo formatWeatherMetric($current_weather_detail['wsd'] ?? null, 'm/s', 1); ?></span>
+                  <span class="detail-value"
+                    id="currentWind"><?php echo formatWeatherMetric($current_weather_detail['wsd'] ?? null, 'm/s', 1); ?></span>
                 </div>
               </div>
             </div>
@@ -567,9 +609,9 @@ function resolveBaseDateTime()
           <section class="weather-card">
             <h2>오늘의 옷차림</h2>
             <div class="outfit-recommendation">
-              <p class="outfit-message clickable" id="outfitMessage">
-                <?php echo $outfit_message; ?>
-              </p>
+              <?php
+              echo $outfit_message;
+              ?>
             </div>
           </section>
 
@@ -612,11 +654,13 @@ function resolveBaseDateTime()
             <div class="profile-info">
               <div class="info-item">
                 <span class="info-label">아이디</span>
-                <span class="info-value" id="profileUid"><?php echo htmlspecialchars($user_id, ENT_QUOTES, 'UTF-8'); ?></span>
+                <span class="info-value"
+                  id="profileUid"><?php echo htmlspecialchars($user_id, ENT_QUOTES, 'UTF-8'); ?></span>
               </div>
               <div class="info-item">
                 <span class="info-label">설정 지역</span>
-                <span class="info-value" id="profileRegion"><?php echo htmlspecialchars($profile_region_text, ENT_QUOTES, 'UTF-8'); ?></span>
+                <span class="info-value"
+                  id="profileRegion"><?php echo htmlspecialchars($profile_region_text, ENT_QUOTES, 'UTF-8'); ?></span>
               </div>
             </div>
           </section>
@@ -682,7 +726,7 @@ function resolveBaseDateTime()
 
     const profileBtn = document.getElementById('profileBtn');
     if (profileBtn) {
-      profileBtn.addEventListener('click', function() {
+      profileBtn.addEventListener('click', function () {
         switchPage('profile');
         document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
         const profileNav = document.querySelector('.nav-item[data-page="profile"]');
@@ -694,7 +738,7 @@ function resolveBaseDateTime()
 
     const outfitMessage = document.getElementById('outfitMessage');
     if (outfitMessage) {
-      outfitMessage.addEventListener('click', function() {
+      outfitMessage.addEventListener('click', function () {
         switchPage('profile');
         document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
         const profileNav = document.querySelector('.nav-item[data-page="profile"]');
@@ -712,7 +756,7 @@ function resolveBaseDateTime()
 
     const regionFormProfile = document.getElementById('regionFormProfile');
     if (regionFormProfile) {
-      regionFormProfile.addEventListener('submit', function(e) {
+      regionFormProfile.addEventListener('submit', function (e) {
         e.preventDefault();
         const sido = document.getElementById('region-sido-profile').value;
         const sigungu = document.getElementById('region-sigungu-profile').value;
@@ -738,7 +782,7 @@ function resolveBaseDateTime()
     }
 
     document.querySelectorAll('.nav-item').forEach(item => {
-      item.addEventListener('click', function(e) {
+      item.addEventListener('click', function (e) {
         if (this.classList.contains('nav-logout')) {
           return;
         }
@@ -753,7 +797,7 @@ function resolveBaseDateTime()
     });
 
     document.querySelectorAll('.delete-form').forEach(form => {
-      form.addEventListener('submit', function(e) {
+      form.addEventListener('submit', function (e) {
         const regionName = this.closest('li')?.querySelector('.region-name')?.textContent?.trim() || '해당 지역';
         const confirmed = window.confirm(`${regionName}을(를) 삭제하시겠습니까?\n삭제 후에는 다시 추가해야 합니다.`);
         if (!confirmed) {
@@ -763,4 +807,5 @@ function resolveBaseDateTime()
     });
   </script>
 </body>
+
 </html>
