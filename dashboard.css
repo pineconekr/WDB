@@ -56,7 +56,8 @@ textarea {
 
 .login-state {
   margin: 0;
-  color: #188038;
+  margin-bottom: 20px;
+  color: #15c54a;
   font-weight: 600;
 }
 
@@ -179,15 +180,6 @@ textarea {
 .primary:focus-visible {
   outline: 3px solid rgba(26, 115, 232, 0.3);
   outline-offset: 2px;
-}
-
-.sidebar-actions .logout-btn {
-  text-align: center;
-}
-
-.sidebar-actions .logout-btn {
-  background: #fce8e6;
-  color: #c5221f;
 }
 
 .sidebar-nav {

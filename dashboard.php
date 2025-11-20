@@ -472,7 +472,7 @@ function resolveBaseDateTime()
   <div class="dashboard-layout">
     <aside class="sidebar">
       <section class="summary-panel">
-        <p class="login-state"><?php echo htmlspecialchars($user_id, ENT_QUOTES, 'UTF-8'); ?>님 환영합니다.</p>
+        <p class="login-state"><?php echo htmlspecialchars($user_id, ENT_QUOTES, 'UTF-8'); ?>님 환영합니다!</p>
 
         <div class="digital-clock-widget">
           <div id="clock-time" class="clock-time">--:--</div>
@@ -533,10 +533,6 @@ function resolveBaseDateTime()
         <button class="primary" type="submit">추가하기</button>
       </form>
 
-      <div class="sidebar-actions">
-        <a href="logout.php" class="primary logout-btn">로그아웃(돌아가기)</a>
-      </div>
-
       <nav class="sidebar-nav">
         <a href="#" class="nav-item active" data-page="dashboard">
           <span class="nav-icon">🏠</span>
@@ -585,8 +581,7 @@ function resolveBaseDateTime()
         <div class="content-body">
           <section class="weather-card">
             <h2>
-              <?php echo htmlspecialchars(($active_region_id !== null) ? $main_region_name : '지역 미설정', ENT_QUOTES, 'UTF-8'); ?>
-              현재 날씨
+              <?php echo htmlspecialchars(($active_region_id !== null) ? $main_region_name . ' 현재 날씨' : '지역 미설정', ENT_QUOTES, 'UTF-8'); ?>
             </h2>
             <div class="weather-info">
               <div class="weather-main">
@@ -629,12 +624,14 @@ function resolveBaseDateTime()
             </div>
           </section>
 
-          <section class="weather-card">
+
+          <!--TODO 기상알림 - 추후에 구현 예정(?) -->
+          <!-- <section class="weather-card">
             <h2>기상 알림</h2>
             <div class="alert-list">
               <p class="no-alert">현재 특별한 기상 알림이 없습니다.</p>
             </div>
-          </section>
+          </section> -->
 
           <section class="weather-card chart-card">
             <h2>날씨 차트</h2>

@@ -77,7 +77,7 @@ $stmt->bind_param("ssii", $user_id, $region_name, $region_nx, $region_ny);
 
 if ($stmt->execute()) {
     // 추가 성공
-    alert_redirect("'" . htmlspecialchars($region_name) . "' 지역이 추가되었습니다.", "dashboard.php");
+    alert_redirect($region_name . " 지역이 추가되었습니다.", "dashboard.php");
 } else {
     // 추가 실패
     alert_back("지역 추가 중 오류가 발생했습니다: " . $stmt->error);
