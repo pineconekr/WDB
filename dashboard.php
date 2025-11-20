@@ -15,7 +15,7 @@ $user_id = $_SESSION['user_id'];
 $host = "localhost";
 $user = "root";
 $pass = "";
-$dbname = "wdb";
+$dbname = "team006";
 $conn = new mysqli($host, $user, $pass, $dbname);
 $conn->set_charset("utf8mb4");
 

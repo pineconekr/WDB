@@ -20,19 +20,19 @@ $conn->set_charset("utf8mb4");
 
 echo "<h1>데이터베이스 설정 시작...</h1>";
 
-//'wdb' 데이터베이스 생성
-$sql_create_db = "CREATE DATABASE wdb
+//'team006' 데이터베이스 생성
+$sql_create_db = "CREATE DATABASE team006
                   DEFAULT CHARACTER SET utf8mb4
                   COLLATE utf8mb4_unicode_ci";
 
 if ($conn->query($sql_create_db) === TRUE) {
-    echo "<p> 'wdb' 데이터베이스 생성 성공 </p>";
+    echo "<p> 'team006' 데이터베이스 생성 성공 </p>";
 } else {
-    echo "<p> 'wdb' 데이터베이스 생성 실패 (또는 이미 존재함): " . $conn->error . "</p>";
+    echo "<p> 'team006' 데이터베이스 생성 실패 (또는 이미 존재함): " . $conn->error . "</p>";
 }
 
-//'wdb'데이터베이스 선택
-$conn->select_db("wdb");
+//'team006'데이터베이스 선택
+$conn->select_db("team006");
 
 //'users' 테이블 생성
 $sql_create_table = "CREATE TABLE users (

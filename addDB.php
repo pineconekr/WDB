@@ -6,14 +6,14 @@ error_reporting(E_ALL);
 $host = "localhost";
 $user = "root";
 $pass = "";
-$dbname = "wdb";
+$dbname = "team006";
 
 // 2. DB 연결
 $conn = new mysqli($host, $user, $pass, $dbname);
 
 // 연결 오류 체크
 if ($conn->connect_error) {
-    die("DB 연결 실패 (wdb 데이터베이스가 존재하지 않는 것 같습니다. setup_db.php를 먼저 실행했나요?): " . $conn->connect_error);
+    die("DB 연결 실패 (team006 데이터베이스가 존재하지 않는 것 같습니다. setup_db.php를 먼저 실행했나요?): " . $conn->connect_error);
 }
 $conn->set_charset("utf8mb4");
 

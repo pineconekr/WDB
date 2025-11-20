@@ -8,7 +8,7 @@ error_reporting(E_ALL);
 $host = "localhost";
 $user = "root";
 $pass = "";
-$dbname = "wdb";
+$dbname = "team006";
 
 // 알림창/이동 함수 (signup.php와 동일)
 function alert_back($message) {

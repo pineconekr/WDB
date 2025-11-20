@@ -5,7 +5,7 @@ error_reporting(E_ALL);
 $host = "localhost";
 $user = "root";
 $pass = "";
-$dbname = "wdb";
+$dbname = "team006";
 
 //에러 및 성공 시 알림창/이동 함수
 function alert_back($message) {

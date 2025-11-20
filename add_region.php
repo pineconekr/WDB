@@ -50,7 +50,7 @@ $region_ny = (int)$parts[2]; // 정수로 변환
 $host = "localhost";
 $user = "root";
 $pass = "";
-$dbname = "wdb";
+$dbname = "team006";
 $conn = new mysqli($host, $user, $pass, $dbname);
 
 if ($conn->connect_error) {
