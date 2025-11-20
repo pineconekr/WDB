@@ -6,6 +6,8 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
+require_once 'RecommendClothes.php';
+
 date_default_timezone_set('Asia/Seoul');
 
 $user_id = $_SESSION['user_id'];
@@ -54,6 +56,13 @@ if (!empty($saved_regions)) {
     $google_chart_data_json = $weatherPayload['chart_json'];
     $current_weather_info = $weatherPayload['current_info'];
     $current_weather_detail = $weatherPayload['current_detail'];
+
+    if (isset($current_weather_detail['temperature'])) {
+        if (function_exists('getClothingRecommendation')) {
+            $outfit_message = getClothingRecommendation((float)$current_weather_detail['temperature']);
+        }
+    }
+
 }
 
 $conn->close();
@@ -559,7 +568,7 @@ function resolveBaseDateTime()
             <h2>오늘의 옷차림</h2>
             <div class="outfit-recommendation">
               <p class="outfit-message clickable" id="outfitMessage">
-                지역을 설정하면 맞춤형 옷차림을 추천해드립니다.
+                <?php echo $outfit_message; ?>
               </p>
             </div>
           </section>
@@ -755,4 +764,3 @@ function resolveBaseDateTime()
   </script>
 </body>
 </html>
-
