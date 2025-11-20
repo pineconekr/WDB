@@ -554,6 +554,20 @@ function resolveBaseDateTime()
           <span class="nav-icon">🚪</span>
           <span class="nav-text">로그아웃</span>
         </a>
+        <div class="external-links">
+          <p class="links-title">외부 링크</p>
+          <div class="links-grid">
+            <a href="https://www.weather.go.kr" target="_blank" class="link-item" title="기상청">
+              🏛️ 기상청
+            </a>
+            <a href="https://www.airkorea.or.kr" target="_blank" class="link-item" title="에어코리아">
+              😷 대기질
+            </a>
+            <a href="https://map.naver.com" target="_blank" class="link-item" title="지도">
+              🗺️ 지도
+            </a>
+          </div>
+        </div>
       </nav>
     </aside>
 
