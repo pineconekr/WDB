@@ -803,6 +803,20 @@ function resolveBaseDateTime()
         const page = this.getAttribute('data-page');
         if (page) {
           switchPage(page);
+          if (page === 'ranking') {
+              const rankingContainer = document.querySelector('#page-ranking .content-body');
+              rankingContainer.innerHTML = '<section class="weather-card"><h2>지역별 기온 랭킹</h2><p>🌤️ 최신 랭킹을 불러오는 중입니다...</p></section>';
+                
+              // URL 뒤에 시간을 붙여서 브라우저 캐시 무력화
+              fetch('weather_ranking.php?t=' + new Date().getTime())
+                  .then(response => response.text())
+                  .then(html => {
+                      rankingContainer.innerHTML = html;
+                  })
+                  .catch(err => {
+                      rankingContainer.innerHTML = '<section class="weather-card"><h2>오류</h2><p style="color:red;">데이터 로드 실패</p></section>';
+                  });
+          }
         }
       });
     });
