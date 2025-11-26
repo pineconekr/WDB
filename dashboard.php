@@ -87,6 +87,8 @@ $regions_list_for_form = [
   "제주" => "제주/52/38"
 ];
 
+$weather_warnings_html = fetchWeatherWarnings();
+
 function fetchSavedRegions($conn, $userId)
 {
   $stmt = $conn->prepare("SELECT id, region_name, region_nx, region_ny FROM user_regions WHERE user_uid = ?");
@@ -354,6 +356,107 @@ function resolveBaseDateTime()
 
   return [$baseDate, $baseTime];
 }
+
+
+function fetchWeatherWarnings() {
+    $serviceKey = "36123b4603a13e885bebb2f5b9ee40654bdeb918a36ff63f00060d57a98fcfb6";
+    $stnId = 108;
+
+    $toTmFc = date("Ymd");
+    $fromTmFc = date("Ymd", strtotime("-5 days"));
+
+    $url = "http://apis.data.go.kr/1360000/WthrWrnInfoService/getWthrWrnMsg";
+    $url .= "?serviceKey={$serviceKey}";
+    $url .= "&numOfRows=20&pageNo=1";
+    $url .= "&dataType=XML";
+    $url .= "&stnId={$stnId}";
+    $url .= "&fromTmFc={$fromTmFc}";
+    $url .= "&toTmFc={$toTmFc}";
+
+    $response = file_get_contents($url);
+    if ($response === FALSE) return "<p>⚠️ 기상특보 API 요청 실패</p>";
+
+    $xml = simplexml_load_string($response);
+    if (!$xml) return "<p>⚠️ 기상특보 XML 파싱 실패</p>";
+
+    if (!isset($xml->body->items->item)) {
+        return "<p>📭 현재 발효 중인 기상특보가 없습니다.</p>";
+    }
+
+    $items = $xml->body->items->item;
+    $html = "";
+
+    // 첫 번째 특보만 기본 표시
+    $first = $items[0];
+    $html .= "
+        <div class='warning-item'>
+            <strong>📢 {$first->t1}</strong><br>
+            발표시각: " . formatTmFc($first->t5) . "<br>
+            내용: " . nl2br($first->t2) . "<br>
+            해제 예고: " . nl2br($first->t4) . "<br>
+            세부 위치: " . nl2br($first->t6) . "<br>
+            예비특보: " . nl2br($first->t7) . "
+        </div>
+    ";
+
+    // 나머지 특보들은 숨겨진 영역에
+    $html .= "<div id='warning-more' style='display:none; margin-top:10px;'>";
+
+    for ($i = 1; $i < count($items); $i++) {
+        $item = $items[$i];
+
+        $html .= "
+            <div class='warning-item'>
+                <strong>📢 {$item->t1}</strong><br>
+                발표시각: " . formatTmFc($first->t5) . "<br>
+
+                내용: " . nl2br($item->t2) . "<br>
+                해제 예고: " . nl2br($item->t4) . "<br>
+                세부 위치: " . nl2br($item->t6) . "<br>
+                예비특보: " . nl2br($item->t7) . "
+                <hr>
+            </div>
+        ";
+    }
+    $html .= "</div>"; // hidden div end
+
+    // 펼치기/접기 버튼
+    $html .= "
+        <button id='warning-toggle' 
+                style='margin-top:10px; background:none; border:none; color:#007BFF; cursor:pointer;'>
+            ▼ 더보기
+        </button>
+
+        <script>
+            const btn = document.getElementById('warning-toggle');
+            const box = document.getElementById('warning-more');
+            let open = false;
+
+            btn.addEventListener('click', () => {
+                open = !open;
+                box.style.display = open ? 'block' : 'none';
+                btn.textContent = open ? '▲ 접기' : '▼ 더보기';
+            });
+        </script>
+    ";
+
+    return $html;
+}
+
+
+function formatTmFc($tmFc) {
+    // 원본 예: 202501231400
+    $year = substr($tmFc, 0, 4);
+    $month = substr($tmFc, 4, 2);
+    $day = substr($tmFc, 6, 2);
+    $hour = substr($tmFc, 8, 2);
+    $min = substr($tmFc, 10, 2);
+
+    return "{$year}-{$month}-{$day} / {$hour}:{$min}";
+}
+
+
+
 ?>
 <!DOCTYPE html>
 <html lang="ko">
@@ -623,6 +726,16 @@ function resolveBaseDateTime()
               ?>
             </div>
           </section>
+
+          <section class="weather-card">
+            <h2>기상특보</h2>
+            <div class="weather-warning">
+              <?php
+              echo $weather_warnings_html;
+              ?>
+            </div>
+          </section>
+
 
 
           <!--TODO 기상알림 - 추후에 구현 예정(?) -->
