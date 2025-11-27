@@ -1,12 +1,19 @@
+/* dashboard.css - 글로벌스타일 설정*/
 :root {
-  --bg: #f5f6fa;
-  --text: #202124;
-  --muted: #5f6368;
-  --border: #e0e3eb;
-  --primary: #1a73e8;
-  --danger: #e74c3c;
+  --bg: #f0f2f5;
+  --surface: #ffffff;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --primary: #2563eb;
+  --danger: #ef4444;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --radius: 16px;
 }
 
+/* 기본 스타일 */
 *,
 *::before,
 *::after {
@@ -219,10 +226,11 @@ textarea {
   font-weight: 600;
 }
 
+/* 외부 링크: 그리드 카드 형태 */
 .links-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  gap: 10px;
 }
 
 .link-item {
@@ -230,24 +238,18 @@ textarea {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: var(--bg);
-  border-radius: 8px;
-  padding: 10px 4px;
-  font-size: 0.75rem;
-  color: var(--text);
-  text-align: center;
+  background: white;
   border: 1px solid var(--border);
-  transition: all 0.2s;
-  gap: 4px;
+  border-radius: 12px;
+  padding: 12px 4px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-weight: 600;
+  transition: all 0.2s ease;
+  text-align: center;
+  gap: 6px;
+  box-shadow: var(--shadow-sm);
 }
-
-.link-item:hover {
-  background: var(--surface);
-  border-color: var(--primary);
-  color: var(--primary);
-}
-
-
 
 /*여기서부터 메인 섹션*/
 .main-content {
@@ -295,15 +297,22 @@ textarea {
 }
 
 .weather-card {
-  background: #fff;
-  border-radius: 20px;
-  padding: 24px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 28px;
   margin-bottom: 24px;
-  box-shadow: 0 12px 32px rgba(32, 33, 36, 0.08);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .weather-card h2 {
-  margin: 0 0 16px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
 }
 
 .weather-info {
@@ -398,27 +407,32 @@ textarea {
   font-size: 0.95rem;
 }
 
-/* 디지털 시계 */
+/* 디지털 시계 위젯 */
 .digital-clock-widget {
-  margin-bottom: 20px;
-  font-variant-numeric: tabular-nums;
+  background: linear-gradient(135deg, var(--primary), #60a5fa);
+  padding: 20px;
+  border-radius: var(--radius);
+  color: white;
+  text-align: center;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-md);
 }
 
 .clock-time {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--text);
-  line-height: 1;
-  letter-spacing: -1px;
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: white;
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .clock-date {
-  margin-top: 4px;
-  font-size: 0.9rem;
-  color: var(--muted);
+  color: rgba(255, 255, 255, 0.9);
   font-weight: 500;
+  margin-top: 4px;
 }
 
+/* 반응형 media 쿼리 */
 @media (max-width: 1080px) {
   .dashboard-layout {
     flex-direction: column;
