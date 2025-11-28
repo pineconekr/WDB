@@ -12,6 +12,11 @@ date_default_timezone_set('Asia/Seoul');
 
 $user_id = $_SESSION['user_id'];
 
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
+header("Expires: Sat, 26 Jul 1997 05:00:00 GMT");
+
 $host = "localhost";
 $user = "root";
 $pass = "";
@@ -53,16 +58,41 @@ if (!empty($saved_regions)) {
   $main_region_name = $main_region['region_name'];
   $profile_region_text = $main_region_name;
 
-  $weatherPayload = fetchWeatherData((int) $main_region['region_nx'], (int) $main_region['region_ny']);
+  $nx = (int) $main_region['region_nx'];
+  $ny = (int) $main_region['region_ny'];
+
+  $weatherPayload = fetchWeatherData($nx, $ny);
+
   $google_chart_data_json = $weatherPayload['chart_json'];
   $current_weather_info = $weatherPayload['current_info'];
   $current_weather_detail = $weatherPayload['current_detail'];
 
-  if (isset($current_weather_detail['temperature'])) {
-    if (function_exists('getClothingRecommendation')) {
-      $outfit_message = getClothingRecommendation((float) $current_weather_detail['temperature']);
+  $realTimeData = fetchRealTimeWeather($nx, $ny);
+  
+  if ($realTimeData !== null) {
+        $current_weather_detail['temperature'] = $realTimeData['T1H'];
+        $current_weather_detail['reh'] = $realTimeData['REH'];
+        $current_weather_detail['wsd'] = $realTimeData['WSD'];
+        
+        $temp = $realTimeData['T1H'];
+        $pty = $realTimeData['PTY'];
+        $weatherText = '맑음'; 
+
+        if ($pty != '0') {
+            $ptyMap = ['1'=>'비', '2'=>'비/눈', '3'=>'눈', '4'=>'소나기', '5'=>'빗방울', '6'=>'빗방울/눈날림', '7'=>'눈날림'];
+            $weatherText = $ptyMap[$pty] ?? '강수';
+        } else {
+             $weatherText = '맑음 (실시간)';
+        }
+        $current_weather_info = "현재: {$temp}℃ / {$weatherText}";
     }
-  }
+
+    if (isset($current_weather_detail['temperature'])) {
+        if (function_exists('getClothingRecommendation')) {
+            $recHtml = getClothingRecommendation((float) $current_weather_detail['temperature']);
+            $outfit_message = '<div class="outfit-message clickable" id="outfitMessage">' . $recHtml . '</div>';
+        }
+    }
 
 }
 
@@ -89,274 +119,224 @@ $regions_list_for_form = [
 
 $weather_warnings_html = fetchWeatherWarnings();
 
-function fetchSavedRegions($conn, $userId)
-{
-  $stmt = $conn->prepare("SELECT id, region_name, region_nx, region_ny FROM user_regions WHERE user_uid = ?");
-  $stmt->bind_param("s", $userId);
-  $stmt->execute();
-  $result = $stmt->get_result();
-
-  $regions = [];
-  while ($row = $result->fetch_assoc()) {
-    $regions[] = $row;
-  }
-
-  $stmt->close();
-
-  return $regions;
+function fetchSavedRegions($conn, $userId) {
+    $stmt = $conn->prepare("SELECT id, region_name, region_nx, region_ny FROM user_regions WHERE user_uid = ?");
+    $stmt->bind_param("s", $userId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $regions = [];
+    while ($row = $result->fetch_assoc()) {
+        $regions[] = $row;
+    }
+    $stmt->close();
+    return $regions;
 }
 
-function findRegionById($conn, $regionId, $userId)
-{
-  $stmt = $conn->prepare("SELECT id, region_name, region_nx, region_ny FROM user_regions WHERE id = ? AND user_uid = ?");
-  $stmt->bind_param("is", $regionId, $userId);
-  $stmt->execute();
-  $result = $stmt->get_result();
-  $region = $result->fetch_assoc();
-  $stmt->close();
-
-  return $region ?: null;
+function findRegionById($conn, $regionId, $userId) {
+    $stmt = $conn->prepare("SELECT id, region_name, region_nx, region_ny FROM user_regions WHERE id = ? AND user_uid = ?");
+    $stmt->bind_param("is", $regionId, $userId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $region = $result->fetch_assoc();
+    $stmt->close();
+    return $region ?: null;
 }
 
-function fetchWeatherData($nx, $ny)
-{
-  $serviceKey = "bbc2f96d627a4f50f836e44d783c2cb40633431aae9315876336c6bd9afd8432";
-  $endpoint = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst";
+function fetchRealTimeWeather($nx, $ny) {
+    $serviceKey = "bbc2f96d627a4f50f836e44d783c2cb40633431aae9315876336c6bd9afd8432";
+    $endpoint = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst";
 
-  list($base_date, $base_time) = resolveBaseDateTime();
+    $now = new DateTime('now', new DateTimeZone('Asia/Seoul'));
+    if ((int)$now->format('i') < 40) {
+        $now->modify('-1 hour');
+    }
+    $base_date = $now->format('Ymd');
+    $base_time = $now->format('H') . '00';
 
-  $params = [
-    'ServiceKey' => $serviceKey,
-    'dataType' => 'JSON',
-    'base_date' => $base_date,
-    'base_time' => $base_time,
-    'nx' => $nx,
-    'ny' => $ny,
-    'pageNo' => 1,
-    'numOfRows' => 300
-  ];
+    $params = [
+        'ServiceKey' => $serviceKey, 'dataType' => 'JSON',
+        'base_date' => $base_date, 'base_time' => $base_time,
+        'nx' => $nx, 'ny' => $ny,
+        'pageNo' => 1, 'numOfRows' => 10
+    ];
 
-  $requestUrl = $endpoint . '?' . http_build_query($params);
+    $ch = curl_init($endpoint . '?' . http_build_query($params));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    $response = curl_exec($ch);
+    curl_close($ch);
 
-  $ch = curl_init($requestUrl);
-  curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-  curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
-  curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    $data = json_decode($response, true);
+    if (!isset($data['response']['header']['resultCode']) || $data['response']['header']['resultCode'] !== '00') {
+        return null;
+    }
 
-  $response = curl_exec($ch);
-  $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-  $curlError = curl_error($ch);
-  curl_close($ch);
+    $items = $data['response']['body']['items']['item'] ?? [];
+    $result = [];
+    foreach ($items as $item) {
+        $result[$item['category']] = $item['obsrValue'];
+    }
+    return $result;
+}
 
-  if ($response === false) {
-    $message = $curlError ? $curlError : '네트워크 오류';
+function fetchWeatherData($nx, $ny) {
+    $serviceKey = "bbc2f96d627a4f50f836e44d783c2cb40633431aae9315876336c6bd9afd8432";
+    $endpoint = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst";
+
+    list($base_date, $base_time) = resolveBaseDateTime();
+
+    $params = [
+        'ServiceKey' => $serviceKey, 'dataType' => 'JSON',
+        'base_date' => $base_date, 'base_time' => $base_time,
+        'nx' => $nx, 'ny' => $ny,
+        'pageNo' => 1, 'numOfRows' => 300
+    ];
+
+    $ch = curl_init($endpoint . '?' . http_build_query($params));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    if ($response === false) {
+        return ['chart_json' => 'null', 'current_info' => "API 호출 실패", 'current_detail' => null];
+    }
+
+    $jsonData = json_decode($response, true);
+    if (!isset($jsonData['response']['header']['resultCode']) || $jsonData['response']['header']['resultCode'] !== '00') {
+        $msg = $jsonData['response']['header']['resultMsg'] ?? 'Error';
+        return ['chart_json' => 'null', 'current_info' => "API 오류: $msg", 'current_detail' => null];
+    }
+
+    $items = $jsonData['response']['body']['items']['item'] ?? [];
+    
+    list($chartRows, $currentInfo, $currentDetails) = transformWeatherItems($items);
+
+    $chartJson = json_encode($chartRows, JSON_UNESCAPED_UNICODE);
+    if ($chartJson === false) $chartJson = 'null';
+
     return [
-      'chart_json' => 'null',
-      'current_info' => "날씨 API 호출 실패: {$message}",
-      'current_detail' => null
+        'chart_json' => $chartJson,
+        'current_info' => $currentInfo,
+        'current_detail' => $currentDetails
     ];
-  }
+}
 
-  if ($httpCode !== 200) {
+function transformWeatherItems($items) {
+    $weatherData = [];
+    $currentHourStr = date('H') . '00';
+
+    foreach ($items as $item) {
+        if ((int)$item['fcstTime'] < (int)$currentHourStr && $item['fcstDate'] == date('Ymd')) continue;
+        if ($item['fcstDate'] < date('Ymd')) continue;
+
+        $cat = $item['category'];
+        if (in_array($cat, ['TMP', 'POP', 'REH', 'WSD', 'SKY', 'PTY'])) {
+            $weatherData[$item['fcstTime']][$cat] = $item['fcstValue'];
+        }
+    }
+    ksort($weatherData);
+
+    if (empty($weatherData)) {
+        return [[], "데이터 없음", null];
+    }
+
+    $chartRows = [['시간', '기온(℃)', '강수확률(%)', '습도(%)']];
+    $currentInfo = "";
+    $currentDetails = null;
+    $count = 0;
+
+    // [추가] 데이터 보정용 변수 (값이 누락되면 이전 값을 사용하기 위함)
+    $lastTmp = 0;
+    $lastPop = 0;
+    $lastReh = 0;
+
+    foreach ($weatherData as $time => $cats) {
+        // [수정] 값이 없으면 이전 값(last) 사용
+        $tmp = isset($cats['TMP']) ? (float)$cats['TMP'] : $lastTmp;
+        $pop = isset($cats['POP']) ? (int)$cats['POP'] : $lastPop;
+        $reh = isset($cats['REH']) ? (int)$cats['REH'] : $lastReh;
+
+        // 현재 값을 다음 루프를 위해 저장
+        $lastTmp = $tmp;
+        $lastPop = $pop;
+        $lastReh = $reh;
+
+        if ($count === 0) {
+            $currentInfo = buildCurrentWeatherText($cats);
+            $currentDetails = buildCurrentDetail($cats, $time);
+            // 만약 첫 데이터에 값이 비어있었다면 보정된 값으로 업데이트
+            if (!isset($cats['TMP'])) $currentDetails['temperature'] = $tmp;
+        }
+
+        $chartRows[] = [
+            substr($time, 0, 2), // [수정] '시' 글자 제거 (숫자만)
+            $tmp,
+            $pop,
+            $reh
+        ];
+        if (++$count >= 24) break;
+    }
+    return [$chartRows, $currentInfo, $currentDetails];
+}
+
+function buildCurrentWeatherText($categories) {
+    $temp = $categories['TMP'] ?? '?';
+    $sky = $categories['SKY'] ?? '1';
+    $pty = $categories['PTY'] ?? '0';
+    $wText = '맑음';
+    if ($pty != '0') {
+        $ptyMap = ['1'=>'비', '2'=>'비/눈', '3'=>'눈', '4'=>'소나기'];
+        $wText = $ptyMap[$pty] ?? '강수';
+    } else {
+        if ($sky == '3') $wText = '구름많음'; elseif ($sky == '4') $wText = '흐림';
+    }
+    return "예보: {$temp}℃ / {$wText}";
+}
+
+function buildCurrentDetail($categories, $time) {
     return [
-      'chart_json' => 'null',
-      'current_info' => "날씨 API 호출 실패: HTTP Code {$httpCode}",
-      'current_detail' => null
+        'time' => $time,
+        'temperature' => isset($categories['TMP']) ? (float)$categories['TMP'] : null,
+        'pop' => isset($categories['POP']) ? (int)$categories['POP'] : null,
+        'reh' => isset($categories['REH']) ? (int)$categories['REH'] : null,
+        'wsd' => isset($categories['WSD']) ? (float)$categories['WSD'] : null
     ];
-  }
-
-  $jsonData = json_decode($response, true);
-
-  if (!isset($jsonData['response']['header']['resultCode']) || $jsonData['response']['header']['resultCode'] !== '00') {
-    $error_msg = $jsonData['response']['header']['resultMsg'] ?? 'API 응답 오류';
-    return [
-      'chart_json' => 'null',
-      'current_info' => "날씨 API 오류: {$error_msg}",
-      'current_detail' => null
-    ];
-  }
-
-  $items = $jsonData['response']['body']['items']['item'] ?? [];
-  list($chartRows, $currentInfo, $currentDetails) = transformWeatherItems($items);
-
-  if (empty($chartRows)) {
-    return [
-      'chart_json' => 'null',
-      'current_info' => $currentInfo,
-      'current_detail' => $currentDetails
-    ];
-  }
-
-  $chartJson = json_encode($chartRows, JSON_UNESCAPED_UNICODE);
-  if ($chartJson === false) {
-    $chartJson = 'null';
-  }
-
-  return [
-    'chart_json' => $chartJson,
-    'current_info' => $currentInfo,
-    'current_detail' => $currentDetails
-  ];
 }
 
-function transformWeatherItems($items)
-{
-  $weatherData = [];
-
-  foreach ($items as $item) {
-    $time = isset($item['fcstTime']) ? $item['fcstTime'] : null;
-    $category = isset($item['category']) ? $item['category'] : null;
-    $value = isset($item['fcstValue']) ? $item['fcstValue'] : null;
-
-    if ($time === null || $category === null) {
-      continue;
-    }
-
-    if (!in_array($category, ['TMP', 'POP', 'REH', 'WSD', 'SKY', 'PTY'], true)) {
-      continue;
-    }
-
-    if (!isset($weatherData[$time])) {
-      $weatherData[$time] = [];
-    }
-
-    $weatherData[$time][$category] = $value;
-  }
-
-  if (empty($weatherData)) {
-    return [[], "날씨 데이터가 없습니다.", null];
-  }
-
-  ksort($weatherData, SORT_STRING);
-
-  $chartRows = [
-    ['시간', '기온(℃)', '강수확률(%)', '습도(%)']
-  ];
-  $currentInfo = "날씨 데이터가 없습니다.";
-  $currentDetails = null;
-  $count = 0;
-
-  foreach ($weatherData as $time => $categories) {
-    if ($count === 0) {
-      $currentInfo = buildCurrentWeatherText($categories);
-      $currentDetails = buildCurrentDetail($categories, $time);
-    }
-
-    $chartRows[] = [
-      substr($time, 0, 2) . '시',
-      isset($categories['TMP']) ? (float) $categories['TMP'] : null,
-      isset($categories['POP']) ? (int) $categories['POP'] : null,
-      isset($categories['REH']) ? (int) $categories['REH'] : null
-    ];
-
-    $count++;
-
-    if ($count >= 12) {
-      break;
-    }
-  }
-
-  if ($count === 0) {
-    return [[], "날씨 데이터가 없습니다.", null];
-  }
-
-  return [$chartRows, $currentInfo, $currentDetails];
+function formatWeatherMetric($val, $unit, $dec=0) {
+    if (!is_numeric($val)) return "--";
+    return number_format((float)$val, $dec) . $unit;
 }
 
-function buildCurrentWeatherText($categories)
-{
-  $temp = isset($categories['TMP']) ? $categories['TMP'] : '?';
-  $sky = isset($categories['SKY']) ? $categories['SKY'] : null;
-  $pty = isset($categories['PTY']) ? $categories['PTY'] : null;
-  $weatherText = '맑음';
+function resolveBaseDateTime() {
+    $timezone = new DateTimeZone('Asia/Seoul');
+    $now = new DateTimeImmutable('now', $timezone);
+    $currentTime = $now->format('Hi');
+    $baseDate = $now->format('Ymd');
+    $baseTime = '2300';
 
-  if ($pty !== null && $pty !== '0') {
-    switch ($pty) {
-      case '1':
-        $weatherText = '비';
-        break;
-      case '2':
-        $weatherText = '비/눈';
-        break;
-      case '3':
-        $weatherText = '눈';
-        break;
-      case '4':
-        $weatherText = '소나기';
-        break;
-      default:
-        $weatherText = '강수';
+    $baseTimesMap = ['0210'=>'0200', 
+                      '0510'=>'0500', 
+                      '0810'=>'0800', 
+                      '1110'=>'1100', 
+                      '1410'=>'1400', 
+                      '1710'=>'1700', 
+                      '2010'=>'2000', 
+                      '2310'=>'2300'];
+
+    foreach ($baseTimesMap as $threshold => $base) {
+        if ($currentTime >= $threshold) {
+            $baseTime = $base;
+        }
     }
-  } else {
-    if ($sky === '3') {
-      $weatherText = '구름많음';
-    } elseif ($sky === '4') {
-      $weatherText = '흐림';
+    if ($currentTime < '0210') {
+        $baseDate = $now->modify('-1 day')->format('Ymd');
     }
-  }
-
-  return "현재: {$temp}℃ / {$weatherText}";
+    return [$baseDate, $baseTime];
 }
-
-function buildCurrentDetail($categories, $time)
-{
-  return [
-    'time' => $time,
-    'temperature' => isset($categories['TMP']) ? (float) $categories['TMP'] : null,
-    'pop' => isset($categories['POP']) ? (int) $categories['POP'] : null,
-    'reh' => isset($categories['REH']) ? (int) $categories['REH'] : null,
-    'wsd' => isset($categories['WSD']) ? (float) $categories['WSD'] : null
-  ];
-}
-
-function formatWeatherMetric($value, $unit = '', $decimals = null)
-{
-  if ($value === null || $value === '' || !is_numeric($value)) {
-    return $unit ? "--{$unit}" : "--";
-  }
-
-  $number = (float) $value;
-  if ($decimals !== null) {
-    $display = number_format($number, max(0, (int) $decimals), '.', '');
-  } else {
-    $display = ($number == (int) $number) ? (string) (int) $number : (string) $number;
-  }
-
-  return $display . $unit;
-}
-
-function resolveBaseDateTime()
-{
-  $timezone = new DateTimeZone('Asia/Seoul');
-  $now = new DateTimeImmutable('now', $timezone);
-  $currentTime = $now->format('Hi');
-  $baseDate = $now->format('Ymd');
-  $baseTime = '2300';
-
-  $baseTimesMap = [
-    '0210' => '0200',
-    '0510' => '0500',
-    '0810' => '0800',
-    '1110' => '1100',
-    '1410' => '1400',
-    '1710' => '1700',
-    '2010' => '2000',
-    '2310' => '2300'
-  ];
-
-  foreach ($baseTimesMap as $threshold => $base) {
-    if ($currentTime >= $threshold) {
-      $baseTime = $base;
-    }
-  }
-
-  if ($currentTime < '0210') {
-    $baseDate = $now->modify('-1 day')->format('Ymd');
-  }
-
-  return [$baseDate, $baseTime];
-}
-
 
 function fetchWeatherWarnings() {
     $serviceKey = "36123b4603a13e885bebb2f5b9ee40654bdeb918a36ff63f00060d57a98fcfb6";
@@ -455,9 +435,9 @@ function formatTmFc($tmFc) {
     return "{$year}-{$month}-{$day} / {$hour}:{$min}";
 }
 
-
-
 ?>
+
+
 <!DOCTYPE html>
 <html lang="ko">
 
@@ -505,7 +485,7 @@ function formatTmFc($tmFc) {
       };
 
       const options = {
-        title: '시간별 상세 예보 (12시간)',
+        title: '시간별 상세 예보 (24시간)',
         backgroundColor: chartColors.bg,
         titleTextStyle: { color: chartColors.text },
         legend: {
