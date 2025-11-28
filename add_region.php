@@ -68,7 +68,7 @@ if ($stmt->num_rows > 0) {
 $stmt->close();
 
 // 6. grid_x, grid_y 조회 (region_dictionary)
-$stmt = $conn->prepare("SELECT grid_x, grid_y FROM region_dictionary WHERE step1 = ? AND step2 = ? AND step3 = ? LIMIT 1");
+$stmt = $conn->prepare("SELECT grid_x, grid_y, stnId FROM region_dictionary WHERE step1 = ? AND step2 = ? AND step3 = ? LIMIT 1");
 $stmt->bind_param("sss", $step1, $step2, $step3);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -81,10 +81,12 @@ if (!$row) {
 
 $region_nx = (int)$row['grid_x'];
 $region_ny = (int)$row['grid_y'];
+$stnId = $row['stnId'];  // 추가됨
+
 
 // 7. DB에 새 지역 "추가"
-$stmt = $conn->prepare("INSERT INTO user_regions (user_uid, region_name, region_nx, region_ny) VALUES (?, ?, ?, ?)");
-$stmt->bind_param("ssii", $user_id, $region_name, $region_nx, $region_ny);
+$stmt = $conn->prepare("INSERT INTO user_regions (user_uid, region_name, region_nx, region_ny, stnId) VALUES (?, ?, ?, ?, ?)");
+$stmt->bind_param("ssiii", $user_id, $region_name, $region_nx, $region_ny, $stnId);
 
 if ($stmt->execute()) {
     alert_redirect($region_name . " 지역이 추가되었습니다.", "dashboard.php");

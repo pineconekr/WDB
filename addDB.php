@@ -55,6 +55,7 @@ $sql_create = "CREATE TABLE user_regions (
     region_nx INT NOT NULL,
     region_ny INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    stnId VARCHAR(16) NULL,
     
     FOREIGN KEY (user_uid) REFERENCES users(uid)
         ON DELETE CASCADE
@@ -74,6 +75,36 @@ try {
     } else {
         echo "<p style='color:red;'>❌ 테이블 생성 오류: " . $e->getMessage() . "</p>";
     }
+}
+
+/* ==========================================================
+    3) user_regions에 stnId 컬럼이 없다면 ADD COLUMN
+   ========================================================== */
+echo "<h3>3. 'user_regions'에 stnId 컬럼 추가 확인...</h3>";
+
+try {
+    $result = $conn->query("SHOW COLUMNS FROM user_regions LIKE 'stnId'");
+    if ($result->num_rows === 0) {
+        // 컬럼 없음 → 추가
+        $conn->query("ALTER TABLE user_regions ADD COLUMN stnId VARCHAR(16) NULL");
+        echo "<p style='color:green;'>✅ stnId 컬럼 추가 완료!</p>";
+    } else {
+        echo "<p style='color:blue;'>ℹ️ stnId 컬럼 이미 존재함 → 다음 단계</p>";
+    }
+} catch (mysqli_sql_exception $e) {
+    echo "<p style='color:red;'>❌ stnId 컬럼 체크 오류: " . $e->getMessage() . "</p>";
+}
+
+/* ==========================================================
+    4) stnId 컬럼이 NOT NULL 상태라면 NULL 허용으로 수정
+   ========================================================== */
+echo "<h3>4. 'stnId' NULL 허용 업데이트...</h3>";
+
+try {
+    $conn->query("ALTER TABLE user_regions MODIFY stnId VARCHAR(16) NULL");
+    echo "<p style='color:green;'>✅ stnId NULL 허용으로 업데이트 완료!</p>";
+} catch (mysqli_sql_exception $e) {
+    echo "<p style='color:red;'>❌ stnId NULL 허용 업데이트 오류: " . $e->getMessage() . "</p>";
 }
 
 echo "<hr>";

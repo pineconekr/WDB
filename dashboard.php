@@ -96,12 +96,14 @@ if (!empty($saved_regions)) {
 
 }
 
+$stnId = $main_region['stnId'];   // ★ 지역별 기상특보용 코드
+$weather_warnings_html = fetchWeatherWarningsByRegion($stnId);
+
 $conn->close();
 
-$weather_warnings_html = fetchWeatherWarnings();
 
 function fetchSavedRegions($conn, $userId) {
-    $stmt = $conn->prepare("SELECT id, region_name, region_nx, region_ny FROM user_regions WHERE user_uid = ?");
+    $stmt = $conn->prepare("SELECT id, region_name, region_nx, region_ny, stnId FROM user_regions WHERE user_uid = ?");
     $stmt->bind_param("s", $userId);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -319,16 +321,15 @@ function resolveBaseDateTime() {
     return [$baseDate, $baseTime];
 }
 
-function fetchWeatherWarnings() {
+function fetchWeatherWarningsByRegion($stnId) {
     $serviceKey = "36123b4603a13e885bebb2f5b9ee40654bdeb918a36ff63f00060d57a98fcfb6";
-    $stnId = 108;
 
     $toTmFc = date("Ymd");
     $fromTmFc = date("Ymd", strtotime("-5 days"));
 
     $url = "http://apis.data.go.kr/1360000/WthrWrnInfoService/getWthrWrnMsg";
     $url .= "?serviceKey={$serviceKey}";
-    $url .= "&numOfRows=20&pageNo=1";
+    $url .= "&numOfRows=50&pageNo=1";
     $url .= "&dataType=XML";
     $url .= "&stnId={$stnId}";
     $url .= "&fromTmFc={$fromTmFc}";
@@ -347,20 +348,20 @@ function fetchWeatherWarnings() {
     $items = $xml->body->items->item;
     $html = "";
 
-    // 첫 번째 특보만 기본 표시
+    // 첫 번째 특보
     $first = $items[0];
     $html .= "
         <div class='warning-item'>
             <strong>📢 {$first->t1}</strong><br>
             발표시각: " . formatTmFc($first->t5) . "<br>
             내용: " . nl2br($first->t2) . "<br>
-            해제 예고: " . nl2br($first->t4) . "<br>
+            해제예고: " . nl2br($first->t4) . "<br>
             세부 위치: " . nl2br($first->t6) . "<br>
             예비특보: " . nl2br($first->t7) . "
         </div>
     ";
 
-    // 나머지 특보들은 숨겨진 영역에
+    // 숨김 영역
     $html .= "<div id='warning-more' style='display:none; margin-top:10px;'>";
 
     for ($i = 1; $i < count($items); $i++) {
@@ -369,19 +370,19 @@ function fetchWeatherWarnings() {
         $html .= "
             <div class='warning-item'>
                 <strong>📢 {$item->t1}</strong><br>
-                발표시각: " . formatTmFc($first->t5) . "<br>
-
+                발표시각: " . formatTmFc($item->t5) . "<br>
                 내용: " . nl2br($item->t2) . "<br>
-                해제 예고: " . nl2br($item->t4) . "<br>
+                해제예고: " . nl2br($item->t4) . "<br>
                 세부 위치: " . nl2br($item->t6) . "<br>
                 예비특보: " . nl2br($item->t7) . "
                 <hr>
             </div>
         ";
     }
-    $html .= "</div>"; // hidden div end
 
-    // 펼치기/접기 버튼
+    $html .= "</div>";
+
+    // 토글 버튼
     $html .= "
         <button id='warning-toggle' 
                 style='margin-top:10px; background:none; border:none; color:#007BFF; cursor:pointer;'>
@@ -403,6 +404,7 @@ function fetchWeatherWarnings() {
 
     return $html;
 }
+
 
 
 function formatTmFc($tmFc) {
