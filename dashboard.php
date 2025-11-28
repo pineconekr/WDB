@@ -98,25 +98,6 @@ if (!empty($saved_regions)) {
 
 $conn->close();
 
-$regions_list_for_form = [
-  "서울" => "서울/60/127",
-  "부산" => "부산/98/76",
-  "대구" => "대구/89/90",
-  "인천" => "인천/55/124",
-  "광주" => "광주/58/74",
-  "대전" => "대전/67/100",
-  "울산" => "울산/102/84",
-  "경기" => "수원/60/121",
-  "강원" => "춘천/73/134",
-  "충북" => "청주/69/107",
-  "충남" => "홍성/68/100",
-  "전북" => "전주/63/89",
-  "전남" => "무안/51/67",
-  "경북" => "안동/91/106",
-  "경남" => "창원/90/77",
-  "제주" => "제주/52/38"
-];
-
 $weather_warnings_html = fetchWeatherWarnings();
 
 function fetchSavedRegions($conn, $userId) {
@@ -602,17 +583,26 @@ function formatTmFc($tmFc) {
       </section>
 
       <form class="region-selector" action="add_region.php" method="POST">
-        <label for="region-select"><strong>새 선호 지역 추가:</strong></label>
+        <label><strong>새 선호 지역 추가:</strong></label>
+        
         <div class="field">
-          <select id="region-select" name="region_data" required>
-            <option value="">-- 지역 선택 --</option>
-            <?php foreach ($regions_list_for_form as $name => $value): ?>
-              <option value="<?php echo htmlspecialchars($value, ENT_QUOTES, 'UTF-8'); ?>">
-                <?php echo htmlspecialchars($name, ENT_QUOTES, 'UTF-8'); ?>
-              </option>
-            <?php endforeach; ?>
+          <select id="region-step1" name="step1" required>
+            <option value="">시/도 선택</option>
           </select>
         </div>
+        
+        <div class="field">
+          <select id="region-step2" name="step2" required disabled>
+            <option value="">시/군/구 선택</option>
+          </select>
+        </div>
+        
+        <div class="field">
+          <select id="region-step3" name="step3" required disabled>
+            <option value="">동/읍/면 선택</option>
+          </select>
+        </div>
+
         <button class="primary" type="submit">추가하기</button>
       </form>
 
@@ -776,35 +766,22 @@ function formatTmFc($tmFc) {
                 <div class="field">
                   <label for="region-sido-profile">시/도</label>
                   <select id="region-sido-profile" name="sido" required>
-                    <option value="">선택하세요</option>
-                    <option value="서울">서울특별시</option>
-                    <option value="부산">부산광역시</option>
-                    <option value="대구">대구광역시</option>
-                    <option value="인천">인천광역시</option>
-                    <option value="광주">광주광역시</option>
-                    <option value="대전">대전광역시</option>
-                    <option value="울산">울산광역시</option>
-                    <option value="세종">세종특별자치시</option>
-                    <option value="경기">경기도</option>
-                    <option value="강원">강원도</option>
-                    <option value="충북">충청북도</option>
-                    <option value="충남">충청남도</option>
-                    <option value="전북">전라북도</option>
-                    <option value="전남">전라남도</option>
-                    <option value="경북">경상북도</option>
-                    <option value="경남">경상남도</option>
-                    <option value="제주">제주특별자치도</option>
+                    <option value="">시/도 선택</option>
                   </select>
                 </div>
 
                 <div class="field">
                   <label for="region-sigungu-profile">시/군/구</label>
-                  <input type="text" id="region-sigungu-profile" name="sigungu" placeholder="예: 강남구, 수원시" required />
+                  <select id="region-sigungu-profile" name="sigungu" required disabled>
+                    <option value="">시/군/구 선택</option>
+                  </select>
                 </div>
 
                 <div class="field">
-                  <label for="region-dong-profile">동/읍/면 (선택)</label>
-                  <input type="text" id="region-dong-profile" name="dong" placeholder="예: 역삼동" />
+                  <label for="region-dong-profile">동/읍/면</label>
+                  <select id="region-dong-profile" name="dong" required disabled>
+                    <option value="">동/읍/면 선택</option>
+                  </select>
                 </div>
 
                 <button type="submit" class="primary">지역 저장</button>
@@ -923,6 +900,84 @@ function formatTmFc($tmFc) {
         }
       });
     });
+
+    // 3단계 드롭다운 로직 (사이드바 + 프로필)
+    document.addEventListener('DOMContentLoaded', () => {
+      initRegionDropdowns('region-step1', 'region-step2', 'region-step3');
+      initRegionDropdowns('region-sido-profile', 'region-sigungu-profile', 'region-dong-profile');
+    });
+
+    function initRegionDropdowns(id1, id2, id3) {
+      const step1 = document.getElementById(id1);
+      const step2 = document.getElementById(id2);
+      const step3 = document.getElementById(id3);
+
+      if (!step1 || !step2 || !step3) return;
+
+      // 1. 시/도 목록 로드
+      fetch('get_regions.php?type=step1')
+        .then(res => res.json())
+        .then(data => {
+          data.forEach(val => {
+            const opt = document.createElement('option');
+            opt.value = val;
+            opt.textContent = val;
+            step1.appendChild(opt);
+          });
+        })
+        .catch(err => console.error('Error loading step1:', err));
+
+      // 2. 시/도 변경 시 시/군/구 로드
+      step1.addEventListener('change', function() {
+        const val1 = this.value;
+        
+        // 하위 초기화
+        step2.innerHTML = '<option value="">시/군/구 선택</option>';
+        step2.disabled = true;
+        step3.innerHTML = '<option value="">동/읍/면 선택</option>';
+        step3.disabled = true;
+
+        if (!val1) return;
+
+        fetch(`get_regions.php?type=step2&step1=${encodeURIComponent(val1)}`)
+          .then(res => res.json())
+          .then(data => {
+            data.forEach(val => {
+              const opt = document.createElement('option');
+              opt.value = val;
+              opt.textContent = val;
+              step2.appendChild(opt);
+            });
+            step2.disabled = false;
+          })
+          .catch(err => console.error('Error loading step2:', err));
+      });
+
+      // 3. 시/군/구 변경 시 동/읍/면 로드
+      step2.addEventListener('change', function() {
+        const val1 = step1.value;
+        const val2 = this.value;
+
+        // 하위 초기화
+        step3.innerHTML = '<option value="">동/읍/면 선택</option>';
+        step3.disabled = true;
+
+        if (!val1 || !val2) return;
+
+        fetch(`get_regions.php?type=step3&step1=${encodeURIComponent(val1)}&step2=${encodeURIComponent(val2)}`)
+          .then(res => res.json())
+          .then(data => {
+            data.forEach(val => {
+              const opt = document.createElement('option');
+              opt.value = val;
+              opt.textContent = val;
+              step3.appendChild(opt);
+            });
+            step3.disabled = false;
+          })
+          .catch(err => console.error('Error loading step3:', err));
+      });
+    }
   </script>
 </body>
 
