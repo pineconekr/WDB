@@ -428,13 +428,97 @@ function formatTmFc($tmFc) {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>WDB 대시보드</title>
-  <link rel="stylesheet" href="./dashboard.css" />
 
+  <!-- 기본 스타일 -->
+  <link rel="stylesheet" href="./dashboard.css?v=<?php echo time(); ?>" />
+  
+  <!-- [핵심] 다크 모드 스타일 강제 적용 -->
+  <style>
+    /* 1. 다크 모드 변수 재정의 */
+    [data-theme="dark"] {
+      --bg: #000000 !important;           
+      --surface: #000000 !important;      
+      --element-bg: #1a1a1a !important;   
+      --text: #ffffff !important;         
+      --text-secondary: #cccccc !important; 
+      --border: #333333 !important;       
+      --primary: #8ab4f8 !important;      
+      --primary-hover: #aecbfa !important;
+      --danger: #f28b82 !important;       
+      --danger-hover: #f6aea9 !important;
+      --chart-grid: #333333 !important;   
+      --shadow: none !important;          
+    }
+    
+    /* 2. 배경색 강제 적용 (흰색 요소 제거) */
+    [data-theme="dark"] .sidebar,
+    [data-theme="dark"] .weather-card {
+        background-color: #000000 !important;
+        border-color: #333333 !important;
+    }
+
+    /* 3. [중요] 아직 흰색으로 남은 요소들 강제 어둡게 */
+    /* 옷차림 박스, 지역 목록, 드롭다운(select), 외부 링크 버튼, 홈 버튼, 내 정보 버튼 추가! */
+    [data-theme="dark"] .clothing-box,
+    [data-theme="dark"] .region-list li,
+    [data-theme="dark"] .region-selector select,
+    [data-theme="dark"] .link-item,
+    [data-theme="dark"] .theme-toggle-btn,
+    [data-theme="dark"] .home-logo-btn,
+    [data-theme="dark"] .profile-btn,       /* 내 정보 버튼 추가 */
+    [data-theme="dark"] .outfit-message,    /* 옷차림 메시지 전체 박스 추가 */
+    [data-theme="dark"] input {
+        background-color: #1a1a1a !important; /* 약간 밝은 검정 */
+        color: #ffffff !important;            /* 글자 흰색 */
+        border: 1px solid #333333 !important; /* 테두리 어두운 회색 */
+    }
+
+    /* 4. 옷차림 박스 내부 텍스트 색상 확실하게 */
+    [data-theme="dark"] .outfit-message .clothing-box span,
+    [data-theme="dark"] .outfit-message .clothing-box {
+        color: #ffffff !important;
+        background-color: #1a1a1a !important;
+    }
+    
+    /* 5. 버튼 호버 효과 (다크모드용) */
+    [data-theme="dark"] .link-item:hover,
+    [data-theme="dark"] .theme-toggle-btn:hover,
+    [data-theme="dark"] .home-logo-btn:hover,
+    [data-theme="dark"] .profile-btn:hover {
+        background-color: #333333 !important;
+    }
+
+    /* 6. 다크모드 토글 버튼 원형 유지 및 위치 수정 */
+    .theme-toggle-btn {
+        border: 1px solid #dadce0;
+        background: #fff;
+        border-radius: 50%;
+        width: 44px;
+        height: 44px;
+        font-size: 1.2rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* 7. 글자색 흰색 강제 (네비게이션 등) */
+    [data-theme="dark"] .nav-item,
+    [data-theme="dark"] .region-selector label,
+    [data-theme="dark"] label,
+    [data-theme="dark"] select {
+        color: #ffffff !important;
+    }
+  </style>
+
+  <!-- 다크모드 초기화 -->
   <script>
-    window.addEventListener('pageshow', function (event) {
-      if (event.persisted) {
-        window.location.reload();
-      }
+    (function() {
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    })();
+    window.addEventListener('pageshow', function(event) {
+        if (event.persisted) window.location.reload();
     });
   </script>
 
@@ -447,49 +531,42 @@ function formatTmFc($tmFc) {
 
     function drawChart(sourceData) {
       const chartDiv = document.getElementById('weather-chart');
-      if (!chartDiv) {
-        return;
-      }
+      if (!chartDiv) return;
 
       if (!Array.isArray(sourceData) || sourceData.length <= 1) {
-        chartDiv.innerHTML = "<p>표시할 날씨 데이터가 없습니다. (지역을 추가하거나 API를 확인하세요)</p>";
+        chartDiv.innerHTML = "<p style='color:var(--text-secondary);'>표시할 날씨 데이터가 없습니다.</p>";
         return;
       }
 
-      const data = google.visualization.arrayToDataTable(sourceData);
+      const doc = document.documentElement;
+      const isDarkMode = doc.getAttribute('data-theme') === 'dark';
 
-      const chartColors = {
-        bg: '#ffffff',
-        text: '#333333',
-        grid: '#e0e0e0',
-        line1: '#e74c3c',
-        line2: '#3498db',
-        bars: '#95a5a6'
+      const chartColors = isDarkMode ? {
+          bg: '#000000',    
+          text: '#ffffff',  
+          grid: '#333333',  
+          line1: '#e74c3c', 
+          line2: '#ffffff', // [핵심] 습도 점선: 흰색
+          bars: '#95a5a6'
+      } : {
+          bg: '#ffffff',
+          text: '#333333',
+          grid: '#e0e0e0',
+          line1: '#e74c3c',
+          line2: '#3498db',
+          bars: '#95a5a6'
       };
 
+      const data = google.visualization.arrayToDataTable(sourceData);
       const options = {
         title: '시간별 상세 예보 (24시간)',
         backgroundColor: chartColors.bg,
         titleTextStyle: { color: chartColors.text },
-        legend: {
-          position: 'bottom',
-          textStyle: { color: chartColors.text }
-        },
+        legend: { position: 'bottom', textStyle: { color: chartColors.text } },
         hAxis: { textStyle: { color: chartColors.text } },
         vAxes: {
-          0: {
-            title: '기온(℃) / 습도(%)',
-            textStyle: { color: chartColors.text },
-            titleTextStyle: { color: chartColors.text }
-          },
-          1: {
-            title: '강수확률(%)',
-            textStyle: { color: chartColors.text },
-            titleTextStyle: { color: chartColors.text },
-            gridlines: { color: 'transparent' },
-            minValue: 0,
-            maxValue: 100
-          }
+          0: { title: '기온(℃) / 습도(%)', textStyle: { color: chartColors.text }, titleTextStyle: { color: chartColors.text } },
+          1: { title: '강수확률(%)', textStyle: { color: chartColors.text }, titleTextStyle: { color: chartColors.text }, gridlines: { color: 'transparent' }, minValue: 0, maxValue: 100 }
         },
         seriesType: 'line',
         series: {
@@ -538,16 +615,19 @@ function formatTmFc($tmFc) {
   <div class="dashboard-layout">
     <aside class="sidebar">
       <section class="summary-panel">
-        <p class="login-state"><?php echo htmlspecialchars($user_id, ENT_QUOTES, 'UTF-8'); ?>님 환영합니다!</p>
-
+        <div class="user-welcome-row">
+            <a href="#" id="btn-home-logo" class="home-logo-btn" title="대시보드 홈으로">
+                <span class="logo-icon">🏠</span>
+            </a>
+            <p class="login-state"><?php echo $user_id; ?>님 환영합니다!</p>
+        </div>
         <div class="digital-clock-widget">
           <div id="clock-time" class="clock-time">--:--</div>
           <div id="clock-date" class="clock-date">--월 --일 (-)</div>
         </div>
-
-        <h2 id="activeRegionTitle"><?php echo htmlspecialchars($main_region_name, ENT_QUOTES, 'UTF-8'); ?></h2>
+        <h2 id="activeRegionTitle"><?php echo htmlspecialchars($main_region_name); ?></h2>
         <p class="current-info" id="activeRegionInfo">
-          <?php echo htmlspecialchars($current_weather_info, ENT_QUOTES, 'UTF-8'); ?>
+          <?php echo htmlspecialchars($current_weather_info); ?>
         </p>
       </section>
 
@@ -609,10 +689,6 @@ function formatTmFc($tmFc) {
       </form>
 
       <nav class="sidebar-nav">
-        <a href="#" class="nav-item active" data-page="dashboard">
-          <span class="nav-icon">🏠</span>
-          <span class="nav-text">대시보드</span>
-        </a>
         <a href="#" class="nav-item" data-page="ranking">
           <span class="nav-icon">📊</span>
           <span class="nav-text">날씨 랭킹</span>
@@ -647,9 +723,10 @@ function formatTmFc($tmFc) {
         <header class="content-header">
           <h1>대시보드</h1>
           <div class="header-actions">
-            <button class="profile-btn" id="profileBtn" title="내 정보 조회">
-              <span class="profile-icon">👤</span>
+            <button id="theme-toggle-btn" class="theme-toggle-btn" title="테마 변경">
+                <span id="theme-icon">🌙</span>
             </button>
+            <button class="profile-btn" id="profileBtn" title="내 정보 조회"><span class="profile-icon">👤</span></button>
           </div>
         </header>
 
@@ -796,10 +873,35 @@ function formatTmFc($tmFc) {
   </div>
 
   <script>
+    const themeToggleBtn = document.getElementById('theme-toggle-btn');
+    const themeIcon = document.getElementById('theme-icon');
+
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    if (currentTheme === 'dark') themeIcon.textContent = '☀️';
+    else themeIcon.textContent = '🌙';
+
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener('click', () => {
+            const doc = document.documentElement;
+            const isDark = doc.getAttribute('data-theme') === 'dark';
+            
+            if (isDark) {
+                doc.setAttribute('data-theme', 'light');
+                localStorage.setItem('theme', 'light');
+                themeIcon.textContent = '🌙';
+            } else {
+                doc.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+                themeIcon.textContent = '☀️';
+            }
+            if (typeof drawChart === 'function' && typeof chartData !== 'undefined') {
+                drawChart(chartData);
+            }
+        });
+    }
+
     function switchPage(pageName) {
-      document.querySelectorAll('.page-content').forEach(page => {
-        page.classList.remove('active');
-      });
+      document.querySelectorAll('.page-content').forEach(page => page.classList.remove('active'));
       const selectedPage = document.getElementById(`page-${pageName}`);
       if (selectedPage) {
         selectedPage.classList.add('active');
@@ -812,10 +914,7 @@ function formatTmFc($tmFc) {
       profileBtn.addEventListener('click', function () {
         switchPage('profile');
         document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-        const profileNav = document.querySelector('.nav-item[data-page="profile"]');
-        if (profileNav) {
-          profileNav.classList.add('active');
-        }
+        document.querySelector('.nav-item[data-page="profile"]')?.classList.add('active');
       });
     }
 
@@ -835,6 +934,15 @@ function formatTmFc($tmFc) {
           }
         }, 100);
       });
+    }
+
+    const homeBtn = document.getElementById('btn-home-logo');
+    if (homeBtn) {
+        homeBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            switchPage('dashboard');
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+        });
     }
 
     const regionFormProfile = document.getElementById('regionFormProfile');
