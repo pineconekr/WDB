@@ -27,10 +27,6 @@ function getClothingRecommendation($temp) {
         $comment = "🧤한파 주의! 패딩, 두꺼운 코트, 목도리, 장갑으로 꽁꽁 싸매세요!";
     }
 
-    // HTML 형태로 반환
-    return "<div class='clothing-box' style='margin-top:10px; padding:10px; background-color:rgba(0,0,0,0.05); border-radius:8px; font-size:0.9rem;'>" 
-         . "<span style='font-size:1.5rem; margin-right:8px;'>$icon</span>" 
-         . "$comment" 
-         . "</div>";
+    return $comment;
 }
 ?>

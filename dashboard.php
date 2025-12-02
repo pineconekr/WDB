@@ -37,7 +37,7 @@ $current_weather_detail = null;
 $google_chart_data_json = 'null';
 $profile_region_text = "--";
 $active_region_id = null;
-$outfit_message = "<span style='color: #e74c3c; font-weight: bold;'>⚠️ 저장된 지역이 없습니다.</span><br>좌측 사이드바에서 지역을 추가해 주세요.";
+$outfit_message = '<blockquote class="outfit-quote">⚠️ 저장된 지역이 없습니다.<br>좌측 사이드바에서 지역을 추가해 주세요.</blockquote>';
 
 if (!empty($saved_regions)) {
   $main_region = null;
@@ -89,8 +89,8 @@ if (!empty($saved_regions)) {
 
     if (isset($current_weather_detail['temperature'])) {
         if (function_exists('getClothingRecommendation')) {
-            $recHtml = getClothingRecommendation((float) $current_weather_detail['temperature']);
-            $outfit_message = '<div class="outfit-message clickable" id="outfitMessage">' . $recHtml . '</div>';
+            $recText = getClothingRecommendation((float) $current_weather_detail['temperature']);
+            $outfit_message = '<blockquote class="outfit-quote">' . htmlspecialchars($recText, ENT_QUOTES, 'UTF-8') . '</blockquote>';
         }
     }
 
@@ -429,88 +429,12 @@ function formatTmFc($tmFc) {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>WDB 대시보드</title>
 
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
   <!-- 기본 스타일 -->
   <link rel="stylesheet" href="./dashboard.css?v=<?php echo time(); ?>" />
   
-  <!-- [핵심] 다크 모드 스타일 강제 적용 -->
-  <style>
-    /* 1. 다크 모드 변수 재정의 */
-    [data-theme="dark"] {
-      --bg: #000000 !important;           
-      --surface: #000000 !important;      
-      --element-bg: #1a1a1a !important;   
-      --text: #ffffff !important;         
-      --text-secondary: #cccccc !important; 
-      --border: #333333 !important;       
-      --primary: #8ab4f8 !important;      
-      --primary-hover: #aecbfa !important;
-      --danger: #f28b82 !important;       
-      --danger-hover: #f6aea9 !important;
-      --chart-grid: #333333 !important;   
-      --shadow: none !important;          
-    }
-    
-    /* 2. 배경색 강제 적용 (흰색 요소 제거) */
-    [data-theme="dark"] .sidebar,
-    [data-theme="dark"] .weather-card {
-        background-color: #000000 !important;
-        border-color: #333333 !important;
-    }
-
-    /* 3. [중요] 아직 흰색으로 남은 요소들 강제 어둡게 */
-    /* 옷차림 박스, 지역 목록, 드롭다운(select), 외부 링크 버튼, 홈 버튼, 내 정보 버튼 추가! */
-    [data-theme="dark"] .clothing-box,
-    [data-theme="dark"] .region-list li,
-    [data-theme="dark"] .region-selector select,
-    [data-theme="dark"] .link-item,
-    [data-theme="dark"] .theme-toggle-btn,
-    [data-theme="dark"] .home-logo-btn,
-    [data-theme="dark"] .profile-btn,       /* 내 정보 버튼 추가 */
-    [data-theme="dark"] .outfit-message,    /* 옷차림 메시지 전체 박스 추가 */
-    [data-theme="dark"] input {
-        background-color: #1a1a1a !important; /* 약간 밝은 검정 */
-        color: #ffffff !important;            /* 글자 흰색 */
-        border: 1px solid #333333 !important; /* 테두리 어두운 회색 */
-    }
-
-    /* 4. 옷차림 박스 내부 텍스트 색상 확실하게 */
-    [data-theme="dark"] .outfit-message .clothing-box span,
-    [data-theme="dark"] .outfit-message .clothing-box {
-        color: #ffffff !important;
-        background-color: #1a1a1a !important;
-    }
-    
-    /* 5. 버튼 호버 효과 (다크모드용) */
-    [data-theme="dark"] .link-item:hover,
-    [data-theme="dark"] .theme-toggle-btn:hover,
-    [data-theme="dark"] .home-logo-btn:hover,
-    [data-theme="dark"] .profile-btn:hover {
-        background-color: #333333 !important;
-    }
-
-    /* 6. 다크모드 토글 버튼 원형 유지 및 위치 수정 */
-    .theme-toggle-btn {
-        border: 1px solid #dadce0;
-        background: #fff;
-        border-radius: 50%;
-        width: 44px;
-        height: 44px;
-        font-size: 1.2rem;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    /* 7. 글자색 흰색 강제 (네비게이션 등) */
-    [data-theme="dark"] .nav-item,
-    [data-theme="dark"] .region-selector label,
-    [data-theme="dark"] label,
-    [data-theme="dark"] select {
-        color: #ffffff !important;
-    }
-  </style>
-
   <!-- 다크모드 초기화 -->
   <script>
     (function() {
@@ -612,127 +536,122 @@ function formatTmFc($tmFc) {
 </head>
 
 <body>
-  <div class="dashboard-layout">
-    <aside class="sidebar">
-      <section class="summary-panel">
-        <div class="user-welcome-row">
-            <a href="#" id="btn-home-logo" class="home-logo-btn" title="대시보드 홈으로">
-                <span class="logo-icon">🏠</span>
-            </a>
-            <p class="login-state"><?php echo $user_id; ?>님 환영합니다!</p>
+  <!-- 상단 고정 네비게이션 바 -->
+  <nav class="top-navbar">
+    <div class="top-navbar-container">
+      <div class="top-nav-left">
+        <div class="top-nav-brand">
+          <a href="#" id="top-nav-home" class="top-nav-logo" title="대시보드 홈으로">
+            <i class="fas fa-home"></i>
+            <span class="logo-text">WDB</span>
+          </a>
         </div>
-        <div class="digital-clock-widget">
-          <div id="clock-time" class="clock-time">--:--</div>
-          <div id="clock-date" class="clock-date">--월 --일 (-)</div>
-        </div>
-        <h2 id="activeRegionTitle"><?php echo htmlspecialchars($main_region_name); ?></h2>
-        <p class="current-info" id="activeRegionInfo">
-          <?php echo htmlspecialchars($current_weather_info); ?>
-        </p>
-      </section>
-
-      <section class="region-list">
-        <h3>나의 선호 지역</h3>
-        <?php if (empty($saved_regions)): ?>
-          <p class="empty-region">아직 저장된 선호 지역이 없습니다.</p>
-        <?php else: ?>
-          <ul>
-            <?php foreach ($saved_regions as $region): ?>
-              <?php
-              $regionId = (int) $region['id'];
-              $isActive = $active_region_id === $regionId;
-              ?>
-              <li data-region-id="<?php echo $regionId; ?>">
-                <span
-                  class="region-name"><?php echo htmlspecialchars($region['region_name'], ENT_QUOTES, 'UTF-8'); ?></span>
-                <div class="region-actions">
-                  <form class="set-region-form" method="GET">
-                    <input type="hidden" name="region_id" value="<?php echo $regionId; ?>">
-                    <button type="submit" class="set-region-btn<?php echo $isActive ? ' active' : ''; ?>"
-                      aria-label="선택 지역 변경">
-                      보기
-                    </button>
-                  </form>
-                  <form class="delete-form" action="delete_region.php" method="POST">
-                    <input type="hidden" name="region_id" value="<?php echo $regionId; ?>">
-                    <button type="submit" class="delete-btn">삭제</button>
-                  </form>
-                </div>
-              </li>
-            <?php endforeach; ?>
-          </ul>
-        <?php endif; ?>
-      </section>
-
-      <form class="region-selector" action="add_region.php" method="POST">
-        <label><strong>새 선호 지역 추가:</strong></label>
-        
-        <div class="field">
-          <select id="region-step1" name="step1" required>
-            <option value="">시/도 선택</option>
-          </select>
-        </div>
-        
-        <div class="field">
-          <select id="region-step2" name="step2" required disabled>
-            <option value="">시/군/구 선택</option>
-          </select>
-        </div>
-        
-        <div class="field">
-          <select id="region-step3" name="step3" required disabled>
-            <option value="">동/읍/면 선택</option>
-          </select>
-        </div>
-
-        <button class="primary" type="submit">추가하기</button>
-      </form>
-
-      <nav class="sidebar-nav">
-        <a href="#" class="nav-item" data-page="ranking">
-          <span class="nav-icon">📊</span>
-          <span class="nav-text">날씨 랭킹</span>
-        </a>
-        <a href="#" class="nav-item" data-page="profile">
-          <span class="nav-icon">👤</span>
-          <span class="nav-text">내 정보</span>
-        </a>
-        <a href="logout.php" class="nav-item nav-logout">
-          <span class="nav-icon">🚪</span>
-          <span class="nav-text">로그아웃</span>
-        </a>
-        <div class="external-links">
-          <p class="links-title">외부 링크</p>
-          <div class="links-grid">
-            <a href="https://www.weather.go.kr" target="_blank" class="link-item" title="기상청">
-              🏛️ 기상청
-            </a>
-            <a href="https://www.airkorea.or.kr" target="_blank" class="link-item" title="에어코리아">
-              😷 대기질
-            </a>
-            <a href="https://map.naver.com" target="_blank" class="link-item" title="지도">
-              🗺️ 지도
-            </a>
+        <div class="top-nav-regions">
+          <span class="top-nav-label">선호 지역</span>
+          <div class="top-nav-region-dropdown">
+            <?php if (empty($saved_regions)): ?>
+              <span class="top-nav-region-text">지역 없음</span>
+            <?php else: ?>
+              <select id="top-nav-region-select" class="top-nav-region-select">
+                <?php foreach ($saved_regions as $region): ?>
+                  <?php
+                  $regionId = (int) $region['id'];
+                  $isActive = $active_region_id === $regionId;
+                  ?>
+                  <option value="<?php echo $regionId; ?>" <?php echo $isActive ? 'selected' : ''; ?>>
+                    <?php echo htmlspecialchars($region['region_name'], ENT_QUOTES, 'UTF-8'); ?>
+                  </option>
+                <?php endforeach; ?>
+              </select>
+            <?php endif; ?>
           </div>
         </div>
-      </nav>
+      </div>
+      
+      <div class="top-nav-center">
+      </div>
+      
+      <div class="top-nav-right">
+        <div class="top-nav-quick">
+          <a href="#" class="top-nav-item" data-page="profile" title="내 정보">
+            <i class="fas fa-user"></i>
+            <span class="nav-text">내 정보</span>
+          </a>
+          <a href="#" class="top-nav-item" data-page="ranking" title="날씨 랭킹">
+            <i class="fas fa-chart-line"></i>
+            <span class="nav-text">날씨 랭킹</span>
+          </a>
+        </div>
+        <div class="top-nav-controls">
+          <div class="top-nav-external-links">
+            <div class="top-nav-links-dropdown">
+              <button class="top-nav-links-btn" title="외부 링크">
+                <i class="fas fa-external-link-alt"></i>
+                <span class="nav-text">외부링크</span>
+              </button>
+              <div class="top-nav-links-menu">
+                <a href="https://www.weather.go.kr" target="_blank" class="top-nav-link-item" title="기상청">
+                  <i class="fas fa-cloud-sun"></i>
+                  <span>기상청</span>
+                </a>
+                <a href="https://www.airkorea.or.kr" target="_blank" class="top-nav-link-item" title="에어코리아">
+                  <i class="fas fa-wind"></i>
+                  <span>대기질</span>
+                </a>
+                <a href="https://map.naver.com" target="_blank" class="top-nav-link-item" title="지도">
+                  <i class="fas fa-map-marked-alt"></i>
+                  <span>지도</span>
+                </a>
+              </div>
+            </div>
+          </div>
+          <button id="theme-toggle-btn" class="theme-toggle-btn" title="테마 변경">
+            <i id="theme-icon" class="fas fa-moon"></i>
+          </button>
+          <button class="top-nav-circle-btn" id="profileBtn" title="내 정보 조회">
+            <i class="fas fa-user-circle"></i>
+          </button>
+          <a href="logout.php" class="top-nav-item top-nav-logout" title="로그아웃">
+            <i class="fas fa-sign-out-alt"></i>
+            <span class="nav-text">로그아웃</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-layout">
+    <aside class="sidebar">
+      <section class="sidebar-card sidebar-profile">
+        <p class="sidebar-label">안녕하세요</p>
+        <p class="sidebar-user"><?php echo htmlspecialchars($user_id, ENT_QUOTES, 'UTF-8'); ?>님</p>
+        <div class="sidebar-clock">
+          <span id="clock-time" class="clock-time">--:--</span>
+          <span id="clock-date" class="clock-date">--월 --일 (-)</span>
+        </div>
+      </section>
+
+      <section class="sidebar-card sidebar-region">
+        <div>
+          <p class="sidebar-label">현재 지역</p>
+          <p class="sidebar-region-name"><?php echo htmlspecialchars($main_region_name, ENT_QUOTES, 'UTF-8'); ?></p>
+          <p class="sidebar-region-info"><?php echo htmlspecialchars($current_weather_info, ENT_QUOTES, 'UTF-8'); ?></p>
+        </div>
+        <?php if (!empty($saved_regions)): ?>
+          <button type="button" class="sidebar-cta" id="sidebarManageRegions">지역 관리</button>
+        <?php endif; ?>
+      </section>
     </aside>
 
     <main class="main-content">
       <div class="page-content active" id="page-dashboard">
         <header class="content-header">
           <h1>대시보드</h1>
-          <div class="header-actions">
-            <button id="theme-toggle-btn" class="theme-toggle-btn" title="테마 변경">
-                <span id="theme-icon">🌙</span>
-            </button>
-            <button class="profile-btn" id="profileBtn" title="내 정보 조회"><span class="profile-icon">👤</span></button>
-          </div>
         </header>
 
         <div class="content-body">
           <section class="weather-card">
-            <h2>
+            <h2 class="card-title">
               <?php echo htmlspecialchars(($active_region_id !== null) ? $main_region_name . ' 현재 날씨' : '지역 미설정', ENT_QUOTES, 'UTF-8'); ?>
             </h2>
             <div class="weather-info">
@@ -767,17 +686,15 @@ function formatTmFc($tmFc) {
             </div>
           </section>
 
-          <section class="weather-card">
-            <h2>오늘의 옷차림</h2>
-            <div class="outfit-recommendation">
-              <?php
-              echo $outfit_message;
-              ?>
+          <section class="weather-card chart-card">
+            <h2 class="card-title">날씨 차트</h2>
+            <div id="weather-chart" class="chart-container">
+              <p>차트 데이터를 불러오는 중...</p>
             </div>
           </section>
 
           <section class="weather-card">
-            <h2>기상특보</h2>
+            <h2 class="card-title">기상특보</h2>
             <div class="weather-warning">
               <?php
               echo $weather_warnings_html;
@@ -795,11 +712,11 @@ function formatTmFc($tmFc) {
             </div>
           </section> -->
 
-          <section class="weather-card chart-card">
-            <h2>날씨 차트</h2>
-            <div id="weather-chart" class="chart-container">
-              <p>차트 데이터를 불러오는 중...</p>
-            </div>
+          <section class="weather-card">
+            <h2 class="card-title outfit-title">오늘의 옷차림</h2>
+            <?php
+            echo $outfit_message;
+            ?>
           </section>
         </div>
       </div>
@@ -809,9 +726,13 @@ function formatTmFc($tmFc) {
           <h1>날씨 랭킹</h1>
         </header>
         <div class="content-body">
-          <section class="weather-card">
-            <h2>지역별 기온 랭킹</h2>
-            <p>랭킹 데이터를 불러오는 중...</p>
+          <section class="weather-card ranking-panel">
+            <div class="ranking-title-row">
+              <div>
+                <h2 class="card-title">지역별 기온 랭킹</h2>
+                <p class="ranking-meta">랭킹 데이터를 준비하고 있습니다...</p>
+              </div>
+            </div>
           </section>
         </div>
       </div>
@@ -823,7 +744,7 @@ function formatTmFc($tmFc) {
 
         <div class="content-body">
           <section class="weather-card">
-            <h2>계정 정보</h2>
+            <h2 class="card-title">계정 정보</h2>
             <div class="profile-info">
               <div class="info-item">
                 <span class="info-label">아이디</span>
@@ -839,31 +760,64 @@ function formatTmFc($tmFc) {
           </section>
 
           <section class="weather-card" id="regionSettingSection">
-            <h2>지역 설정</h2>
+            <h2 class="card-title">선호지역 추가 및 관리</h2>
+            
+            <div class="region-management">
+              <h3>나의 선호 지역</h3>
+              <?php if (empty($saved_regions)): ?>
+                <p class="empty-region">아직 저장된 선호 지역이 없습니다.</p>
+              <?php else: ?>
+                <ul class="region-list-profile">
+                  <?php foreach ($saved_regions as $region): ?>
+                    <?php
+                    $regionId = (int) $region['id'];
+                    $isActive = $active_region_id === $regionId;
+                    ?>
+                    <li data-region-id="<?php echo $regionId; ?>" class="<?php echo $isActive ? 'active' : ''; ?>">
+                      <span class="region-name"><?php echo htmlspecialchars($region['region_name'], ENT_QUOTES, 'UTF-8'); ?></span>
+                      <div class="region-actions">
+                        <form class="set-region-form" method="GET">
+                          <input type="hidden" name="region_id" value="<?php echo $regionId; ?>">
+                          <button type="submit" class="set-region-btn<?php echo $isActive ? ' active' : ''; ?>" aria-label="선택 지역 변경">
+                            보기
+                          </button>
+                        </form>
+                        <form class="delete-form" action="delete_region.php" method="POST">
+                          <input type="hidden" name="region_id" value="<?php echo $regionId; ?>">
+                          <button type="submit" class="delete-btn">삭제</button>
+                        </form>
+                      </div>
+                    </li>
+                  <?php endforeach; ?>
+                </ul>
+              <?php endif; ?>
+            </div>
+
             <div class="region-setting">
-              <form id="regionFormProfile">
+              <h3>새 선호 지역 추가</h3>
+              <form class="region-selector" action="add_region.php" method="POST">
                 <div class="field">
-                  <label for="region-sido-profile">시/도</label>
-                  <select id="region-sido-profile" name="sido" required>
+                  <label for="region-step1-profile">시/도</label>
+                  <select id="region-step1-profile" name="step1" required>
                     <option value="">시/도 선택</option>
                   </select>
                 </div>
-
+                
                 <div class="field">
-                  <label for="region-sigungu-profile">시/군/구</label>
-                  <select id="region-sigungu-profile" name="sigungu" required disabled>
+                  <label for="region-step2-profile">시/군/구</label>
+                  <select id="region-step2-profile" name="step2" required disabled>
                     <option value="">시/군/구 선택</option>
                   </select>
                 </div>
-
+                
                 <div class="field">
-                  <label for="region-dong-profile">동/읍/면</label>
-                  <select id="region-dong-profile" name="dong" required disabled>
+                  <label for="region-step3-profile">동/읍/면</label>
+                  <select id="region-step3-profile" name="step3" required disabled>
                     <option value="">동/읍/면 선택</option>
                   </select>
                 </div>
 
-                <button type="submit" class="primary">지역 저장</button>
+                <button class="primary" type="submit">추가하기</button>
               </form>
             </div>
           </section>
@@ -877,22 +831,29 @@ function formatTmFc($tmFc) {
     const themeIcon = document.getElementById('theme-icon');
 
     const currentTheme = localStorage.getItem('theme') || 'light';
-    if (currentTheme === 'dark') themeIcon.textContent = '☀️';
-    else themeIcon.textContent = '🌙';
+    const themeIconElement = document.getElementById('theme-icon');
+    if (themeIconElement) {
+      if (currentTheme === 'dark') {
+        themeIconElement.className = 'fas fa-sun';
+      } else {
+        themeIconElement.className = 'fas fa-moon';
+      }
+    }
 
     if (themeToggleBtn) {
         themeToggleBtn.addEventListener('click', () => {
             const doc = document.documentElement;
             const isDark = doc.getAttribute('data-theme') === 'dark';
+            const themeIconElement = document.getElementById('theme-icon');
             
             if (isDark) {
                 doc.setAttribute('data-theme', 'light');
                 localStorage.setItem('theme', 'light');
-                themeIcon.textContent = '🌙';
+                if (themeIconElement) themeIconElement.className = 'fas fa-moon';
             } else {
                 doc.setAttribute('data-theme', 'dark');
                 localStorage.setItem('theme', 'dark');
-                themeIcon.textContent = '☀️';
+                if (themeIconElement) themeIconElement.className = 'fas fa-sun';
             }
             if (typeof drawChart === 'function' && typeof chartData !== 'undefined') {
                 drawChart(chartData);
@@ -909,41 +870,114 @@ function formatTmFc($tmFc) {
       }
     }
 
+    function setActiveTopNav(pageName) {
+      document.querySelectorAll('.top-nav-item').forEach(item => item.classList.remove('active'));
+      if (pageName) {
+        document.querySelector(`.top-nav-item[data-page="${pageName}"]`)?.classList.add('active');
+      }
+    }
+
     const profileBtn = document.getElementById('profileBtn');
     if (profileBtn) {
       profileBtn.addEventListener('click', function () {
         switchPage('profile');
-        document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-        document.querySelector('.nav-item[data-page="profile"]')?.classList.add('active');
+        setActiveTopNav('profile');
       });
     }
 
-    const outfitMessage = document.getElementById('outfitMessage');
-    if (outfitMessage) {
-      outfitMessage.addEventListener('click', function () {
+    const sidebarManageBtn = document.getElementById('sidebarManageRegions');
+    if (sidebarManageBtn) {
+      sidebarManageBtn.addEventListener('click', function () {
         switchPage('profile');
-        document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-        const profileNav = document.querySelector('.nav-item[data-page="profile"]');
-        if (profileNav) {
-          profileNav.classList.add('active');
-        }
+        setActiveTopNav('profile');
         setTimeout(() => {
-          const regionSection = document.getElementById('regionSettingSection');
-          if (regionSection) {
-            regionSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }
+          document.getElementById('regionSettingSection')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 100);
       });
     }
 
-    const homeBtn = document.getElementById('btn-home-logo');
-    if (homeBtn) {
-        homeBtn.addEventListener('click', function(e) {
+
+    // 상단 네비게이션 홈 버튼
+    const topNavHome = document.getElementById('top-nav-home');
+    if (topNavHome) {
+        topNavHome.addEventListener('click', function(e) {
             e.preventDefault();
             switchPage('dashboard');
-            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+            setActiveTopNav(null);
         });
     }
+
+    // 상단 네비게이션 지역 선택 변경
+    const topNavRegionSelect = document.getElementById('top-nav-region-select');
+    if (topNavRegionSelect) {
+        topNavRegionSelect.addEventListener('change', function() {
+            const regionId = this.value;
+            if (regionId) {
+                window.location.href = '?region_id=' + regionId;
+            }
+        });
+    }
+
+    // 상단 네비게이션 외부 링크 드롭다운
+    const topNavLinksBtn = document.querySelector('.top-nav-links-btn');
+    const topNavLinksMenu = document.querySelector('.top-nav-links-menu');
+    if (topNavLinksBtn && topNavLinksMenu) {
+        topNavLinksBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            topNavLinksMenu.classList.toggle('show');
+        });
+        document.addEventListener('click', function(e) {
+            if (!topNavLinksBtn.contains(e.target) && !topNavLinksMenu.contains(e.target)) {
+                topNavLinksMenu.classList.remove('show');
+            }
+        });
+    }
+
+    // 상단 네비게이션 아이템 클릭 이벤트
+    document.querySelectorAll('.top-nav-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            if (this.classList.contains('top-nav-logout')) {
+                return;
+            }
+            e.preventDefault();
+            const page = this.getAttribute('data-page');
+            setActiveTopNav(page);
+            if (page) {
+                switchPage(page);
+                if (page === 'ranking') {
+                    const rankingContainer = document.querySelector('#page-ranking .content-body');
+                    rankingContainer.innerHTML = `
+                        <section class="weather-card ranking-panel">
+                            <div class="ranking-title-row">
+                                <div>
+                                    <h2 class="card-title">지역별 기온 랭킹</h2>
+                                    <p class="ranking-meta">🌤️ 최신 랭킹을 불러오는 중입니다...</p>
+                                </div>
+                            </div>
+                        </section>
+                    `;
+
+                    fetch('weather_ranking.php?t=' + new Date().getTime())
+                        .then(response => response.text())
+                        .then(html => {
+                            rankingContainer.innerHTML = html;
+                        })
+                        .catch(() => {
+                            rankingContainer.innerHTML = `
+                                <section class="weather-card ranking-panel">
+                                    <div class="ranking-title-row">
+                                        <div>
+                                            <h2 class="card-title">지역별 기온 랭킹</h2>
+                                            <p class="ranking-error-text">데이터 로드 실패. 잠시 후 다시 시도해 주세요.</p>
+                                        </div>
+                                    </div>
+                                </section>
+                            `;
+                        });
+                }
+            }
+        });
+    });
 
     const regionFormProfile = document.getElementById('regionFormProfile');
     if (regionFormProfile) {
@@ -972,35 +1006,6 @@ function formatTmFc($tmFc) {
       });
     }
 
-    document.querySelectorAll('.nav-item').forEach(item => {
-      item.addEventListener('click', function (e) {
-        if (this.classList.contains('nav-logout')) {
-          return;
-        }
-        e.preventDefault();
-        document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-        this.classList.add('active');
-        const page = this.getAttribute('data-page');
-        if (page) {
-          switchPage(page);
-          if (page === 'ranking') {
-              const rankingContainer = document.querySelector('#page-ranking .content-body');
-              rankingContainer.innerHTML = '<section class="weather-card"><h2>지역별 기온 랭킹</h2><p>🌤️ 최신 랭킹을 불러오는 중입니다...</p></section>';
-                
-              // URL 뒤에 시간을 붙여서 브라우저 캐시 무력화
-              fetch('weather_ranking.php?t=' + new Date().getTime())
-                  .then(response => response.text())
-                  .then(html => {
-                      rankingContainer.innerHTML = html;
-                  })
-                  .catch(err => {
-                      rankingContainer.innerHTML = '<section class="weather-card"><h2>오류</h2><p style="color:red;">데이터 로드 실패</p></section>';
-                  });
-          }
-        }
-      });
-    });
-
     document.querySelectorAll('.delete-form').forEach(form => {
       form.addEventListener('submit', function (e) {
         const regionName = this.closest('li')?.querySelector('.region-name')?.textContent?.trim() || '해당 지역';
@@ -1011,10 +1016,9 @@ function formatTmFc($tmFc) {
       });
     });
 
-    // 3단계 드롭다운 로직 (사이드바 + 프로필)
+    // 3단계 드롭다운 로직 (프로필 페이지)
     document.addEventListener('DOMContentLoaded', () => {
-      initRegionDropdowns('region-step1', 'region-step2', 'region-step3');
-      initRegionDropdowns('region-sido-profile', 'region-sigungu-profile', 'region-dong-profile');
+      initRegionDropdowns('region-step1-profile', 'region-step2-profile', 'region-step3-profile');
     });
 
     function initRegionDropdowns(id1, id2, id3) {

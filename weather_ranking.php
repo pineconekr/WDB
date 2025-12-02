@@ -45,25 +45,26 @@ $conn->close();
 
 // 저장된 지역이 없으면 안내 메시지 출력
 if (empty($regions)) {
-    echo '<div style="padding:20px; text-align:center; color:#666;">
+    echo '
+        <section class="weather-card ranking-panel ranking-empty-state">
+            <h2 class="card-title">지역별 기온 랭킹</h2>
             <p>📉 저장된 관심 지역이 없습니다.</p>
             <p>좌측 메뉴에서 <strong>지역을 2개 이상 추가</strong>해보세요!</p>
-          </div>';
+        </section>
+    ';
     exit;
 }
 
-// 3. 날씨 API 호출 및 기온 수집 함수
-function getTempForRegion($nx, $ny) {
+// 3. 단순 기온/날씨 정보 수집용 헬퍼 (초급 개발자 수준으로 단순화)
+function fetchRegionSnapshot($nx, $ny) {
     $serviceKey = "bbc2f96d627a4f50f836e44d783c2cb40633431aae9315876336c6bd9afd8432";
     $endpoint = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst";
 
-    // 현재 시간 기준으로 가장 최신 Base_time 계산
     $now = new DateTime('now', new DateTimeZone('Asia/Seoul'));
     $currentTime = $now->format('Hi');
     $baseDate = $now->format('Ymd');
     $baseTime = '2300';
 
-    // 단기예보 API 제공 시간
     $baseTimesMap = [
         '0210' => '0200', '0510' => '0500', '0810' => '0800', '1110' => '1100',
         '1410' => '1400', '1710' => '1700', '2010' => '2000', '2310' => '2300'
@@ -78,17 +79,20 @@ function getTempForRegion($nx, $ny) {
         $baseDate = (clone $now)->modify('-1 day')->format('Ymd');
     }
 
-    // [중요] 기온 데이터를 확실히 잡기 위해 numOfRows를 60으로 설정
     $params = [
-        'ServiceKey' => $serviceKey, 'dataType' => 'JSON',
-        'base_date' => $baseDate, 'base_time' => $baseTime,
-        'nx' => $nx, 'ny' => $ny,
-        'pageNo' => 1, 'numOfRows' => 60 
+        'ServiceKey' => $serviceKey,
+        'dataType' => 'JSON',
+        'base_date' => $baseDate,
+        'base_time' => $baseTime,
+        'nx' => $nx,
+        'ny' => $ny,
+        'pageNo' => 1,
+        'numOfRows' => 80
     ];
 
     $ch = curl_init($endpoint . '?' . http_build_query($params));
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5); // 각 요청당 5초 타임아웃
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
     $response = curl_exec($ch);
     curl_close($ch);
@@ -96,99 +100,141 @@ function getTempForRegion($nx, $ny) {
     $data = json_decode($response, true);
     $items = $data['response']['body']['items']['item'] ?? [];
 
-    // TMP(1시간 기온) 찾기
+    if (empty($items)) {
+        return null;
+    }
+
     foreach ($items as $item) {
         if ($item['category'] === 'TMP') {
-            return (float)$item['fcstValue']; 
+            return [
+                'temp' => (float) $item['fcstValue'],
+                'fcstDate' => $item['fcstDate'],
+                'fcstTime' => $item['fcstTime']
+            ];
         }
     }
-    return null; // 기온 데이터 없음
+
+    return null;
 }
 
-// 4. 각 지역별 기온 수집
+function formatTemp($value) {
+    if ($value === null || $value === '' || $value === '--') {
+        return '--';
+    }
+    $precision = abs($value) >= 10 ? 0 : 1;
+    return number_format((float) $value, $precision) . "°C";
+}
+
+function formatFcstLabel($date, $time) {
+    if (!$date || !$time) {
+        return date('Y.m.d H시');
+    }
+    $formatted = DateTime::createFromFormat('Ymd H', $date . ' ' . substr($time, 0, 2));
+    return $formatted ? $formatted->format('Y.m.d H시') : ($date . ' ' . substr($time, 0, 2) . '시');
+}
+
+function detectTemperatureState($value) {
+    if ($value === null || $value === '' || $value === '--') {
+        return 'neutral';
+    }
+    $temp = (float) $value;
+    if ($temp >= 25) {
+        return 'is-hot';
+    }
+    if ($temp <= 0) {
+        return 'is-cold';
+    }
+    return 'neutral';
+}
+
+// 4. 각 지역별 데이터 수집 (현재 기온과 상태만)
 $ranking_data = [];
+$referenceDate = null;
+$referenceTime = null;
+
 foreach ($regions as $region) {
-    $temp = getTempForRegion($region['region_nx'], $region['region_ny']);
-    
-    if ($temp !== null) {
+    $snapshot = fetchRegionSnapshot($region['region_nx'], $region['region_ny']);
+
+    if ($snapshot !== null) {
+        if ($referenceDate === null) {
+            $referenceDate = $snapshot['fcstDate'];
+            $referenceTime = $snapshot['fcstTime'];
+        }
+
         $ranking_data[] = [
             'name' => $region['region_name'],
-            'temp' => $temp,
+            'snapshot' => $snapshot,
             'status' => 'ok'
         ];
     } else {
-        // API 호출 실패하거나 데이터가 없는 경우
         $ranking_data[] = [
             'name' => $region['region_name'],
-            'temp' => -999, // 정렬 시 맨 뒤로 보내기 위함
             'status' => 'error'
         ];
     }
 }
 
-// 5. 기온 높은 순으로 정렬 (내림차순)
-usort($ranking_data, function($a, $b) {
-    return $a['temp'] <=> $b['temp'];
+usort($ranking_data, function ($a, $b) {
+    $aTemp = ($a['status'] === 'ok' && isset($a['snapshot']['temp'])) ? $a['snapshot']['temp'] : -999;
+    $bTemp = ($b['status'] === 'ok' && isset($b['snapshot']['temp'])) ? $b['snapshot']['temp'] : -999;
+    return $bTemp <=> $aTemp;
 });
 
-// 6. 결과 HTML 출력
+$referenceLabel = formatFcstLabel($referenceDate, $referenceTime);
+$updatedLabel = date('H:i');
+
+// 5. 결과 HTML 출력
 ?>
-<style>
-    .ranking-list { list-style: none; padding: 0; margin: 0; }
-    .ranking-item {
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 15px; margin-bottom: 10px;
-        background: #fff; border: 1px solid #e0e0e0; border-radius: 12px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.03);
-    }
-    .rank-badge {
-        width: 30px; height: 30px; border-radius: 50%;
-        background: #eee; color: #555;
-        display: flex; align-items: center; justify-content: center;
-        font-weight: bold; margin-right: 12px;
-    }
-    /* 메달 색상 */
-    .rank-1 { background: #FFD700; color: #fff; } 
-    .rank-2 { background: #C0C0C0; color: #fff; } 
-    .rank-3 { background: #CD7F32; color: #fff; } 
-    
-    .region-info { flex: 1; font-size: 1.1rem; font-weight: 500; }
-    .temp-info { font-size: 1.3rem; font-weight: bold; color: #333; }
-    
-    /* 온도별 색상 */
-    .hot { color: #e74c3c; }
-    .cold { color: #3498db; }
-    .error-text { font-size: 0.9rem; color: #999; font-weight: normal; }
-</style>
+<section class="weather-card ranking-panel">
+    <div class="ranking-title-row">
+        <div>
+            <h2 class="card-title">지역별 기온 랭킹</h2>
+            <p class="ranking-meta">
+                <?php echo htmlspecialchars($referenceLabel, ENT_QUOTES, 'UTF-8'); ?> 기준 · 저장 지역 <?php echo count($regions); ?>곳 비교
+            </p>
+        </div>
+        <span class="ranking-updated">업데이트 <?php echo htmlspecialchars($updatedLabel, ENT_QUOTES, 'UTF-8'); ?></span>
+    </div>
 
-<div style="margin-bottom: 15px; font-size: 0.9rem; color: #666;">
-    * 저장된 관심 지역 <?php echo count($regions); ?>곳을 비교합니다.
-</div>
-
-<ul class="ranking-list">
-    <?php foreach ($ranking_data as $index => $data): ?>
-        <?php 
-            $rank = $index + 1;
-            $badgeClass = ($rank <= 3) ? "rank-$rank" : "";
-            
-            // 데이터 상태에 따른 표시
-            if ($data['status'] === 'ok') {
-                $tempClass = ($data['temp'] >= 20) ? 'hot' : (($data['temp'] <= 10) ? 'cold' : '');
-                $tempText = $data['temp'] . "°C";
-            } else {
-                $badgeClass = ""; // 에러면 뱃지 색 제거
-                $tempClass = "error-text";
-                $tempText = "데이터 없음";
-            }
-        ?>
-        <li class="ranking-item">
-            <div style="display:flex; align-items:center;">
-                <span class="rank-badge <?php echo $badgeClass; ?>"><?php echo $rank; ?></span>
-                <span class="region-info"><?php echo htmlspecialchars($data['name']); ?></span>
-            </div>
-            <span class="temp-info <?php echo $tempClass; ?>">
-                <?php echo $tempText; ?>
-            </span>
-        </li>
-    <?php endforeach; ?>
-</ul>
+    <ol class="ranking-list" aria-live="polite">
+        <?php foreach ($ranking_data as $index => $data): ?>
+            <?php
+                $rankClasses = [];
+                if ($index === 0) {
+                    $rankClasses[] = 'is-first';
+                }
+                if ($index < 3) {
+                    $rankClasses[] = 'is-top-three';
+                }
+                if ($data['status'] !== 'ok') {
+                    $rankClasses[] = 'is-error';
+                }
+                $classAttr = empty($rankClasses) ? '' : ' ' . implode(' ', $rankClasses);
+                $snapshot = $data['status'] === 'ok' ? ($data['snapshot'] ?? null) : null;
+                $summaryText = $snapshot ? formatFcstLabel($snapshot['fcstDate'], $snapshot['fcstTime']) : null;
+                $temperatureState = $snapshot ? detectTemperatureState($snapshot['temp'] ?? null) : 'neutral';
+                $temperatureValue = $snapshot ? formatTemp($snapshot['temp'] ?? null) : '--';
+            ?>
+            <li class="ranking-card<?php echo $classAttr; ?>">
+                <div class="ranking-card-header">
+                    <div class="rank-index">
+                        <span class="rank-number"><?php echo $index + 1; ?></span>
+                        <span class="rank-label">위</span>
+                    </div>
+                    <div class="rank-region">
+                        <span class="region-name"><?php echo htmlspecialchars($data['name'], ENT_QUOTES, 'UTF-8'); ?></span>
+                        <?php if ($summaryText): ?>
+                            <span class="region-summary"><?php echo htmlspecialchars($summaryText, ENT_QUOTES, 'UTF-8'); ?></span>
+                        <?php else: ?>
+                            <span class="region-summary ranking-error-text">기상 데이터를 불러오지 못했습니다.</span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="rank-temperature <?php echo $temperatureState; ?>">
+                        <span class="temperature-value"><?php echo $temperatureValue; ?></span>
+                        <span class="temperature-label">현재 기온</span>
+                    </div>
+                </div>
+            </li>
+        <?php endforeach; ?>
+    </ol>
+</section>
