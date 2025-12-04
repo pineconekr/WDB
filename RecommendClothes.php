@@ -6,7 +6,6 @@
  */
 function getClothingRecommendation($temp) {
     $comment = "";
-    $icon = "";
 
     // 기온별 옷차림 로직
     if ($temp >= 28) {

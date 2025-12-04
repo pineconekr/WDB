@@ -541,7 +541,7 @@ function formatTmFc($tmFc) {
     <div class="top-navbar-container">
       <div class="top-nav-left">
         <div class="top-nav-brand">
-          <a href="#" id="top-nav-home" class="top-nav-logo" title="대시보드 홈으로">
+          <a href="#" id="top-nav-home" class="top-nav-logo" title="홈으로">
             <i class="fas fa-home"></i>
             <span class="logo-text">WDB</span>
           </a>
@@ -551,7 +551,7 @@ function formatTmFc($tmFc) {
           <?php if (empty($saved_regions)): ?>
             <span class="top-nav-region-text">지역 없음</span>
           <?php else: ?>
-            <select id="top-nav-region-select" class="top-nav-region-select" aria-label="선호 지역 선택">
+            <select id="top-nav-region-select" class="top-nav-region-select" aria-label="선호 지역을 선택하세요">
               <?php foreach ($saved_regions as $region): ?>
                 <?php
                 $regionId = (int) $region['id'];
@@ -666,16 +666,19 @@ function formatTmFc($tmFc) {
               </div>
               <div class="weather-details">
                 <div class="detail-item">
+                  <i class="fa-solid fa-droplet" style="color: #00518fff;"></i>
                   <span class="detail-label">강수확률</span>
                   <span class="detail-value"
                     id="currentPop"><?php echo formatWeatherMetric($current_weather_detail['pop'] ?? null, '%', 0); ?></span>
                 </div>
                 <div class="detail-item">
+                  <i class="fa-solid fa-percent" style="color: #00518fff;"></i>
                   <span class="detail-label">습도</span>
                   <span class="detail-value"
                     id="currentReh"><?php echo formatWeatherMetric($current_weather_detail['reh'] ?? null, '%', 0); ?></span>
                 </div>
                 <div class="detail-item">
+                  <i class="fa-solid fa-wind" style="color: #00518fff;"></i>
                   <span class="detail-label">풍속</span>
                   <span class="detail-value"
                     id="currentWind"><?php echo formatWeatherMetric($current_weather_detail['wsd'] ?? null, 'm/s', 1); ?></span>
@@ -699,16 +702,6 @@ function formatTmFc($tmFc) {
               ?>
             </div>
           </section>
-
-
-
-          <!--TODO 기상알림 - 추후에 구현 예정(?) -->
-          <!-- <section class="weather-card">
-            <h2>기상 알림</h2>
-            <div class="alert-list">
-              <p class="no-alert">현재 특별한 기상 알림이 없습니다.</p>
-            </div>
-          </section> -->
 
           <section class="weather-card">
             <h2 class="card-title outfit-title">오늘의 옷차림</h2>
