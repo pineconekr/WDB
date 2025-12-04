@@ -1,4 +1,8 @@
-/* dashboard.css - 글로벌스타일 설정*/
+/* ============================================
+   dashboard.css - 대시보드 전역 스타일
+   ============================================ */
+
+/* CSS 변수 정의: 라이트 테마 색상 및 스타일 값 */
 :root {
   --bg: #f0f2f5;
   --surface: #ffffff;
@@ -25,6 +29,7 @@
   --radius: 16px;
 }
 
+/* CSS 변수 정의: 다크 테마 색상 및 스타일 값 */
 [data-theme="dark"] {
   --bg: #121212;
   --surface: #121212;
@@ -50,13 +55,18 @@
   --shadow-lg: none;
 }
 
-/* 기본 스타일 */
+/* ============================================
+   기본 스타일 리셋 및 전역 설정
+   ============================================ */
+
+/* 모든 요소에 border-box 적용 (패딩/보더 포함한 크기 계산) */
 *,
 *::before,
 *::after {
   box-sizing: border-box;
 }
 
+/* body 기본 스타일: 상단 네비게이션 바 높이만큼 패딩 추가 */
 body {
   margin: 0;
   font-family: "Noto Sans KR", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
@@ -66,7 +76,11 @@ body {
   padding-top: 64px;
 }
 
-/* 상단 고정 네비게이션 바 */
+/* ============================================
+   상단 고정 네비게이션 바
+   ============================================ */
+
+/* 상단 고정 네비게이션: 스크롤해도 항상 상단에 고정 */
 .top-navbar {
   position: fixed;
   top: 0;
@@ -79,6 +93,7 @@ body {
   box-shadow: var(--shadow-sm);
 }
 
+/* 네비게이션 컨테이너: 3열 그리드 레이아웃 (로고/지역선택/우측메뉴) */
 .top-navbar-container {
   max-width: 100%;
   height: 100%;
@@ -89,6 +104,7 @@ body {
   gap: 24px;
 }
 
+/* 네비게이션 좌측: 로고 영역 */
 .top-nav-left {
   display: flex;
   align-items: center;
@@ -101,6 +117,7 @@ body {
   gap: 12px;
 }
 
+/* 로고 스타일: 호버 시 배경색 및 테두리 변경 */
 .top-nav-logo {
   display: flex;
   align-items: center;
@@ -123,42 +140,47 @@ body {
   font-size: 1rem;
 }
 
+/* 네비게이션 중앙: 지역 선택 영역 */
 .top-nav-center {
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
+/* 선호 지역 선택: 둥근 캡슐 형태의 선택 박스 */
 .top-nav-regions {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 12px;
+  padding: 6px 14px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 999px;
   background: var(--element-bg);
+  flex-wrap: wrap;
 }
 
 .top-nav-label {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--text-secondary);
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.top-nav-region-dropdown {
-  min-width: 140px;
 }
 
 .top-nav-region-select {
-  width: 100%;
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--element-bg);
+  border: none;
+  background: transparent;
+  padding: 2px 0;
+  min-width: 160px;
   color: var(--text);
   font-size: 0.9rem;
+  font-weight: 600;
   cursor: pointer;
+}
+
+.top-nav-region-select:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--active-border);
+  border-radius: 6px;
 }
 
 .top-nav-region-text {
@@ -166,6 +188,7 @@ body {
   font-size: 0.9rem;
 }
 
+/* 네비게이션 우측: 빠른 메뉴 및 컨트롤 영역 */
 .top-nav-right {
   display: flex;
   align-items: center;
@@ -178,6 +201,7 @@ body {
   gap: 6px;
 }
 
+/* 네비게이션 아이템: 호버 시 색상 변경 */
 .top-nav-item {
   display: flex;
   align-items: center;
@@ -212,6 +236,7 @@ body {
   background: var(--logout-hover-bg);
 }
 
+/* 네비게이션 컨트롤: 테마 토글 등 */
 .top-nav-controls {
   display: flex;
   align-items: center;
@@ -222,10 +247,12 @@ body {
   position: relative;
 }
 
+/* 외부 링크 드롭다운 메뉴 */
 .top-nav-links-dropdown {
   position: relative;
 }
 
+/* 외부 링크 버튼: 클릭 시 드롭다운 메뉴 표시 */
 .top-nav-links-btn {
   display: flex;
   align-items: center;
@@ -253,6 +280,7 @@ body {
   color: var(--primary);
 }
 
+/* 드롭다운 메뉴: 기본적으로 숨김, .show 클래스 추가 시 표시 */
 .top-nav-links-menu {
   position: absolute;
   top: calc(100% + 8px);
@@ -294,11 +322,17 @@ body {
   background: var(--hover-bg);
 }
 
+/* ============================================
+   기본 요소 스타일
+   ============================================ */
+
+/* 링크 기본 스타일 제거 */
 a {
   text-decoration: none;
   color: inherit;
 }
 
+/* 폼 요소 폰트 상속 */
 button,
 input,
 select,
@@ -310,6 +344,7 @@ label {
   color: var(--text-secondary);
 }
 
+/* 입력 필드 기본 스타일 */
 input,
 select,
 textarea {
@@ -318,12 +353,18 @@ textarea {
   border: 1px solid var(--border);
 }
 
+/* ============================================
+   대시보드 레이아웃
+   ============================================ */
+
+/* 메인 레이아웃: 사이드바 + 메인 콘텐츠 영역 */
 .dashboard-layout {
   display: flex;
   min-height: 100vh;
   background: var(--bg);
 }
 
+/* 사이드바: 좌측 고정 영역 (사용자 정보, 시계, 지역 정보 등) */
 .sidebar {
   width: 300px;
   background: var(--bg);
@@ -334,6 +375,7 @@ textarea {
   gap: 24px;
 }
 
+/* 원형 버튼: 테마 토글 및 기타 컨트롤 버튼 */
 .theme-toggle-btn,
 .top-nav-circle-btn {
   border: 1px solid var(--border);
@@ -355,6 +397,7 @@ textarea {
   border-color: var(--primary);
 }
 
+/* 사이드바 카드: 각 정보 섹션을 담는 컨테이너 */
 .sidebar-card {
   border: 1px solid var(--border);
   border-radius: 20px;
@@ -365,6 +408,7 @@ textarea {
   gap: 12px;
 }
 
+/* 사이드바 라벨: 섹션 제목 스타일 */
 .sidebar-label {
   font-size: 0.75rem;
   text-transform: uppercase;
@@ -372,6 +416,7 @@ textarea {
   color: var(--text-secondary);
 }
 
+/* 사용자 이름 */
 .sidebar-user {
   font-size: 1.25rem;
   font-weight: 600;
@@ -379,6 +424,7 @@ textarea {
   color: var(--text);
 }
 
+/* 시계 영역 */
 .sidebar-clock {
   display: flex;
   flex-direction: column;
@@ -397,6 +443,7 @@ textarea {
   font-size: 0.9rem;
 }
 
+/* 지역 정보 영역 */
 .sidebar-region {
   gap: 16px;
 }
@@ -414,6 +461,7 @@ textarea {
   font-size: 0.95rem;
 }
 
+/* 사이드바 CTA 버튼: 밑줄 스타일의 링크 버튼 */
 .sidebar-cta {
   align-self: flex-start;
   border: none;
@@ -427,6 +475,7 @@ textarea {
   text-underline-offset: 4px;
 }
 
+/* 기본 버튼 스타일: 주요 액션 버튼 */
 .primary {
   display: inline-flex;
   justify-content: center;
@@ -446,6 +495,7 @@ textarea {
   outline-offset: 2px;
 }
 
+/* 외부 링크 섹션 */
 .external-links {
   margin-top: 20px;
 }
@@ -457,7 +507,7 @@ textarea {
   font-weight: 600;
 }
 
-/* 외부 링크: 그리드 카드 형태 */
+/* 외부 링크: 3열 그리드 카드 형태 */
 .links-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -482,7 +532,11 @@ textarea {
   box-shadow: var(--shadow-sm);
 }
 
-/*여기서부터 메인 섹션*/
+/* ============================================
+   메인 콘텐츠 영역
+   ============================================ */
+
+/* 메인 콘텐츠: 사이드바 옆의 가변 너비 영역 */
 .main-content {
   flex: 1;
   padding: 32px;
@@ -490,6 +544,7 @@ textarea {
   margin-top: 0; /* 상단 네비게이션 바 때문에 body에 padding-top을 추가했으므로 여기서는 제거 */
 }
 
+/* 콘텐츠 헤더: 페이지 제목과 프로필 버튼 영역 */
 .content-header {
   display: flex;
   justify-content: space-between;
@@ -502,7 +557,7 @@ textarea {
   font-size: 1.6rem;
 }
 
-
+/* 프로필 버튼: 원형 아이콘 버튼 */
 .profile-btn {
   border: 1px solid var(--border);
   background: var(--input-bg);
@@ -516,6 +571,7 @@ textarea {
   justify-content: center;
 }
 
+/* 페이지 콘텐츠: 기본 숨김, .active 클래스 추가 시 표시 */
 .page-content {
   display: none;
 }
@@ -524,6 +580,7 @@ textarea {
   display: block;
 }
 
+/* 날씨 카드: 날씨 정보를 표시하는 카드 컨테이너 */
 .weather-card {
   background: var(--surface);
   border-radius: var(--radius);
@@ -534,6 +591,7 @@ textarea {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
+/* 카드 제목: 주요 섹션 제목 스타일 */
 .weather-card .card-title {
   font-size: 1.3rem;
   font-weight: 700;
@@ -553,6 +611,7 @@ textarea {
   padding-bottom: 16px;
 }
 
+/* 날씨 정보 레이아웃: 온도와 상세 정보 영역 */
 .weather-info {
   display: flex;
   justify-content: space-between;
@@ -569,12 +628,14 @@ textarea {
   color: var(--text-secondary);
 }
 
+/* 날씨 상세 정보: 습도, 풍속 등 */
 .weather-details {
   display: flex;
   gap: 32px;
   flex-wrap: wrap;
 }
 
+/* 상세 정보 아이템: 라벨과 값 쌍 */
 .detail-item {
   display: flex;
   flex-direction: column;
@@ -597,6 +658,7 @@ textarea {
   line-height: 1.2;
 }
 
+/* 코디 추천 문구: 따옴표 스타일 */
 .outfit-quote {
   margin: 0;
   padding: 24px;
@@ -614,7 +676,7 @@ textarea {
 }
 
 .outfit-quote::before {
-  content: "“";
+  content: "\201C";
   font-size: 2rem;
   line-height: 1;
   color: var(--primary);
@@ -624,17 +686,24 @@ textarea {
   border-color: var(--primary);
 }
 
+/* 알림 목록: 알림이 없을 때 표시 */
 .alert-list .no-alert {
   margin: 0;
   color: var(--text-secondary);
 }
 
+/* 차트 컨테이너: 날씨 차트 영역 */
 .chart-container,
 #weather-chart {
   width: 100%;
   height: 360px;
 }
 
+/* ============================================
+   프로필 및 지역 설정
+   ============================================ */
+
+/* 프로필 정보: 그리드 레이아웃 */
 .profile-info {
   display: grid;
   gap: 12px;
@@ -653,6 +722,7 @@ textarea {
   font-weight: 600;
 }
 
+/* 지역 설정 폼 필드 */
 .region-setting .field {
   margin-bottom: 16px;
   display: flex;
@@ -682,6 +752,7 @@ textarea {
   color: var(--text);
 }
 
+/* 지역 관리: 저장된 지역 목록 */
 .region-management {
   margin-bottom: 32px;
 }
@@ -693,6 +764,7 @@ textarea {
   color: var(--text);
 }
 
+/* 지역 목록: 저장된 지역 리스트 */
 .region-list-profile {
   list-style: none;
   margin: 0;
@@ -720,6 +792,7 @@ textarea {
   color: var(--text);
 }
 
+/* 지역 액션 버튼 영역 */
 .region-actions {
   display: flex;
   align-items: center;
@@ -727,6 +800,7 @@ textarea {
   flex-wrap: wrap;
 }
 
+/* 지역 설정 버튼: .active 클래스로 활성 상태 표시 */
 .set-region-btn {
   border: 1px solid var(--primary);
   background: transparent;
@@ -760,6 +834,7 @@ textarea {
   cursor: pointer;
 }
 
+/* 활성 지역: 현재 선택된 지역 강조 */
 .region-list-profile li.active {
   border-color: var(--primary);
   background: var(--region-active-bg);
@@ -786,6 +861,11 @@ textarea {
   font-size: 0.95rem;
 }
 
+/* ============================================
+   지역 랭킹 패널
+   ============================================ */
+
+/* 랭킹 패널: 지역 온도 순위 표시 */
 .ranking-panel {
   display: flex;
   flex-direction: column;
@@ -797,6 +877,7 @@ textarea {
   color: var(--text-secondary);
 }
 
+/* 랭킹 제목 행: 제목과 업데이트 시간 */
 .ranking-title-row {
   display: flex;
   justify-content: space-between;
@@ -811,6 +892,7 @@ textarea {
   color: var(--text-secondary);
 }
 
+/* 업데이트 시간 배지 */
 .ranking-updated {
   font-size: 0.85rem;
   color: var(--text-secondary);
@@ -820,6 +902,7 @@ textarea {
   border: 1px solid var(--border);
 }
 
+/* 랭킹 리스트: 지역별 순위 카드 목록 */
 .ranking-list {
   list-style: none;
   padding: 0;
@@ -829,6 +912,7 @@ textarea {
   gap: 12px;
 }
 
+/* 랭킹 카드: 각 지역의 순위 정보 카드 */
 .ranking-card {
   border: 1px solid var(--border);
   border-radius: 16px;
@@ -845,25 +929,30 @@ textarea {
   transform: translateY(-1px);
 }
 
+/* 1위 카드 강조 */
 .ranking-card.is-first {
   border-color: var(--primary);
 }
 
+/* 상위 3위 카드 강조 */
 .ranking-card.is-top-three {
   border-color: rgba(37, 99, 235, 0.35);
 }
 
+/* 에러 상태 카드: 데이터 로드 실패 시 */
 .ranking-card.is-error {
   border-style: dashed;
   opacity: 0.8;
 }
 
+/* 랭킹 카드 헤더: 순위 번호, 지역명, 온도 */
 .ranking-card-header {
   display: flex;
   align-items: center;
   gap: 16px;
 }
 
+/* 순위 인덱스: 순위 번호 표시 박스 */
 .rank-index {
   width: 48px;
   height: 48px;
@@ -888,6 +977,7 @@ textarea {
   text-transform: uppercase;
 }
 
+/* 지역 정보 영역 */
 .rank-region {
   flex: 1;
   min-width: 0;
@@ -910,6 +1000,7 @@ textarea {
   text-overflow: ellipsis;
 }
 
+/* 온도 표시 영역: 온도에 따라 배경색 변경 */
 .rank-temperature {
   min-width: 130px;
   text-align: right;
@@ -921,16 +1012,19 @@ textarea {
   gap: 4px;
 }
 
+/* 더운 날씨: 빨간색 배경 */
 .rank-temperature.is-hot {
   background: rgba(239, 68, 68, 0.14);
   color: #b91c1c;
 }
 
+/* 추운 날씨: 파란색 배경 */
 .rank-temperature.is-cold {
   background: rgba(37, 99, 235, 0.14);
   color: #1d4ed8;
 }
 
+/* 보통 온도: 기본 배경 */
 .rank-temperature.neutral {
   background: var(--element-bg);
   color: var(--text);
@@ -949,6 +1043,7 @@ textarea {
   text-transform: uppercase;
 }
 
+/* 빈 상태: 데이터가 없을 때 표시 */
 .ranking-empty-state {
   text-align: center;
   gap: 8px;
@@ -959,17 +1054,20 @@ textarea {
   color: var(--text-secondary);
 }
 
+/* 에러 텍스트: 데이터 로드 실패 메시지 */
 .ranking-error-text {
   color: var(--danger);
   font-weight: 600;
 }
 
+/* 랭킹 카드 메타 정보: 날씨 상태 등의 추가 정보 */
 .ranking-card-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
+/* 메타 칩: 작은 정보 배지 */
 .meta-chip {
   display: inline-flex;
   align-items: center;
@@ -994,13 +1092,17 @@ textarea {
   color: var(--primary);
 }
 
+/* ============================================
+   반응형 디자인 (미디어 쿼리)
+   ============================================ */
 
-/* 반응형 media 쿼리 */
+/* 태블릿 및 작은 데스크톱: 1080px 이하 */
 @media (max-width: 1080px) {
   body {
     padding-top: 70px; /* 모바일에서도 네비게이션 바 높이 유지 */
   }
 
+  /* 레이아웃을 세로 방향으로 변경 (사이드바가 상단으로 이동) */
   .dashboard-layout {
     flex-direction: column;
   }
@@ -1020,28 +1122,31 @@ textarea {
     gap: 12px;
   }
 
+  /* 모바일에서는 텍스트 숨기고 아이콘만 표시 */
   .top-nav-label {
-    display: none; /* 모바일에서는 라벨 숨김 */
+    display: none;
   }
 
   .top-nav-item .nav-text {
-    display: none; /* 모바일에서는 텍스트 숨기고 아이콘만 표시 */
+    display: none;
   }
 
   .top-nav-links-btn .nav-text {
-    display: none; /* 모바일에서는 텍스트 숨기고 아이콘만 표시 */
+    display: none;
   }
 
   .top-nav-item.top-nav-logout .nav-text {
-    display: none; /* 모바일에서는 로그아웃 텍스트도 숨김 */
+    display: none;
   }
 }
 
+/* 모바일: 640px 이하 */
 @media (max-width: 640px) {
   .sidebar {
     padding: 24px 16px;
   }
 
+  /* 날씨 정보를 세로 방향으로 배치 */
   .weather-info {
     flex-direction: column;
   }

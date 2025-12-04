@@ -548,23 +548,21 @@ function formatTmFc($tmFc) {
         </div>
         <div class="top-nav-regions">
           <span class="top-nav-label">선호 지역</span>
-          <div class="top-nav-region-dropdown">
-            <?php if (empty($saved_regions)): ?>
-              <span class="top-nav-region-text">지역 없음</span>
-            <?php else: ?>
-              <select id="top-nav-region-select" class="top-nav-region-select">
-                <?php foreach ($saved_regions as $region): ?>
-                  <?php
-                  $regionId = (int) $region['id'];
-                  $isActive = $active_region_id === $regionId;
-                  ?>
-                  <option value="<?php echo $regionId; ?>" <?php echo $isActive ? 'selected' : ''; ?>>
-                    <?php echo htmlspecialchars($region['region_name'], ENT_QUOTES, 'UTF-8'); ?>
-                  </option>
-                <?php endforeach; ?>
-              </select>
-            <?php endif; ?>
-          </div>
+          <?php if (empty($saved_regions)): ?>
+            <span class="top-nav-region-text">지역 없음</span>
+          <?php else: ?>
+            <select id="top-nav-region-select" class="top-nav-region-select" aria-label="선호 지역 선택">
+              <?php foreach ($saved_regions as $region): ?>
+                <?php
+                $regionId = (int) $region['id'];
+                $isActive = $active_region_id === $regionId;
+                ?>
+                <option value="<?php echo $regionId; ?>" <?php echo $isActive ? 'selected' : ''; ?>>
+                  <?php echo htmlspecialchars($region['region_name'], ENT_QUOTES, 'UTF-8'); ?>
+                </option>
+              <?php endforeach; ?>
+            </select>
+          <?php endif; ?>
         </div>
       </div>
       
