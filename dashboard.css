@@ -280,7 +280,7 @@ body {
   color: var(--primary);
 }
 
-/* 드롭다운 메뉴: 기본적으로 숨김, .show 클래스 추가 시 표시 */
+/* 드롭다운 메뉴: 기본적으로 숨김, .show 클래스 추가 시 표시되도록  */
 .top-nav-links-menu {
   position: absolute;
   top: calc(100% + 8px);
