@@ -1,17 +1,21 @@
 <?php
 session_start();
 
+// 만약 세션이 없으면 auth.html로 이동
 if (!isset($_SESSION['user_id'])) {
   header("Location: auth.html");
   exit;
 }
 
+// RecommendClothes.php 파일 로드
 require_once 'RecommendClothes.php';
 
+// 기본 시간 설정
 date_default_timezone_set('Asia/Seoul');
 
 $user_id = $_SESSION['user_id'];
 
+// (최신 날씨 정보를 항상 가져오도록 설정하기 위해 브라우저가 캐시를 사용하지 않도록 설정)
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");
@@ -31,13 +35,22 @@ if ($conn->connect_error) {
 $saved_regions = fetchSavedRegions($conn, $user_id);
 $requested_region_id = isset($_GET['region_id']) ? (int) $_GET['region_id'] : null;
 
-$main_region_name = "지역 미설정";
-$current_weather_info = "표시할 지역을 먼저 추가해 주세요.";
+// 지역 미설정 시 기본 메시지
+$main_region_name = "먼저 지역을 설정해주세요.";
+$current_weather_info = "먼저 지역을 설정해주세요.";
 $current_weather_detail = null;
 $google_chart_data_json = 'null';
 $profile_region_text = "--";
 $active_region_id = null;
-$outfit_message = '<blockquote class="outfit-quote">⚠️ 저장된 지역이 없습니다.<br>좌측 사이드바에서 지역을 추가해 주세요.</blockquote>';
+$outfit_message = '<blockquote class="outfit-quote">저장된 지역이 없습니다. \'내 정보\'에서 지역을 설정해주세요.</blockquote>';
+$wind_chill_data = [
+  'applicable' => false,
+  'value' => null,
+  'message' => '지역을 먼저 설정해주세요.',
+  'temp_c' => null,
+  'wind_kmh' => null
+];
+
 
 if (!empty($saved_regions)) {
   $main_region = null;
@@ -67,8 +80,10 @@ if (!empty($saved_regions)) {
   $current_weather_info = $weatherPayload['current_info'];
   $current_weather_detail = $weatherPayload['current_detail'];
 
+  // 실시간 날씨 데이터 가져오기 (parameters: nx, ny 좌표)
   $realTimeData = fetchRealTimeWeather($nx, $ny);
   
+  // 값 덮어쓰기 (실시간 날씨 데이터가 있으면 실시간으로 한번 더 덮어쓰기)
   if ($realTimeData !== null) {
         $current_weather_detail['temperature'] = $realTimeData['T1H'];
         $current_weather_detail['reh'] = $realTimeData['REH'];
@@ -82,7 +97,7 @@ if (!empty($saved_regions)) {
             $ptyMap = ['1'=>'비', '2'=>'비/눈', '3'=>'눈', '4'=>'소나기', '5'=>'빗방울', '6'=>'빗방울/눈날림', '7'=>'눈날림'];
             $weatherText = $ptyMap[$pty] ?? '강수';
         } else {
-             $weatherText = '맑음 (실시간)';
+             $weatherText = '맑음';
         }
         $current_weather_info = "현재: {$temp}℃ / {$weatherText}";
     }
@@ -93,6 +108,11 @@ if (!empty($saved_regions)) {
             $outfit_message = '<blockquote class="outfit-quote">' . htmlspecialchars($recText, ENT_QUOTES, 'UTF-8') . '</blockquote>';
         }
     }
+
+    $wind_chill_data = calculateWindChillData(
+        $current_weather_detail['temperature'] ?? null,
+        $current_weather_detail['wsd'] ?? null
+    );
 
 }
 
@@ -130,7 +150,8 @@ function fetchRealTimeWeather($nx, $ny) {
     $endpoint = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst";
 
     $now = new DateTime('now', new DateTimeZone('Asia/Seoul'));
-    if ((int)$now->format('i') < 40) {
+    // 매시각 10분 이후 호출 
+    if ((int)$now->format('i') < 10) {
         $now->modify('-1 hour');
     }
     $base_date = $now->format('Ymd');
@@ -231,27 +252,14 @@ function transformWeatherItems($items) {
     $currentDetails = null;
     $count = 0;
 
-    // [추가] 데이터 보정용 변수 (값이 누락되면 이전 값을 사용하기 위함)
-    $lastTmp = 0;
-    $lastPop = 0;
-    $lastReh = 0;
-
     foreach ($weatherData as $time => $cats) {
-        // [수정] 값이 없으면 이전 값(last) 사용
-        $tmp = isset($cats['TMP']) ? (float)$cats['TMP'] : $lastTmp;
-        $pop = isset($cats['POP']) ? (int)$cats['POP'] : $lastPop;
-        $reh = isset($cats['REH']) ? (int)$cats['REH'] : $lastReh;
-
-        // 현재 값을 다음 루프를 위해 저장
-        $lastTmp = $tmp;
-        $lastPop = $pop;
-        $lastReh = $reh;
+        $tmp = isset($cats['TMP']) ? (float)$cats['TMP'] : 0;
+        $pop = isset($cats['POP']) ? (int)$cats['POP'] : 0;
+        $reh = isset($cats['REH']) ? (int)$cats['REH'] : 0;
 
         if ($count === 0) {
             $currentInfo = buildCurrentWeatherText($cats);
             $currentDetails = buildCurrentDetail($cats, $time);
-            // 만약 첫 데이터에 값이 비어있었다면 보정된 값으로 업데이트
-            if (!isset($cats['TMP'])) $currentDetails['temperature'] = $tmp;
         }
 
         $chartRows[] = [
@@ -286,6 +294,50 @@ function buildCurrentDetail($categories, $time) {
         'pop' => isset($categories['POP']) ? (int)$categories['POP'] : null,
         'reh' => isset($categories['REH']) ? (int)$categories['REH'] : null,
         'wsd' => isset($categories['WSD']) ? (float)$categories['WSD'] : null
+    ];
+}
+
+function calculateWindChillData($tempC, $windSpeedMs) {
+    $temp = is_numeric($tempC) ? (float)$tempC : null;
+    $windMs = is_numeric($windSpeedMs) ? (float)$windSpeedMs : null;
+    $windKmh = $windMs !== null ? $windMs * 3.6 : null;
+
+    if ($temp === null || $windMs === null) {
+        return [
+            'applicable' => false,
+            'value' => null,
+            'message' => '체감추위 계산에 필요한 기온/풍속 데이터를 불러오지 못했습니다.',
+            'temp_c' => $temp,
+            'wind_kmh' => $windKmh
+        ];
+    }
+
+    $windKmhRounded = round($windKmh, 1);
+
+    if ($temp > 10 || $windKmh < 4.8) {
+        $reasons = [];
+        if ($temp > 10) $reasons[] = '기온이 10℃ 초과';
+        if ($windKmh < 4.8) $reasons[] = '풍속이 4.8 km/h 미만';
+        $reasonText = empty($reasons) ? '조건 미충족' : implode(', ', $reasons);
+
+        return [
+            'applicable' => false,
+            'value' => null,
+            'message' => "{$reasonText}. 기온 ≤ 10℃ · 풍속 ≥ 4.8 km/h일 때만 공식이 적용됩니다.",
+            'temp_c' => $temp,
+            'wind_kmh' => $windKmhRounded
+        ];
+    }
+
+    $windPower = pow($windKmh, 0.16);
+    $wc = 13.12 + 0.6215 * $temp - 11.37 * $windPower + 0.3965 * $temp * $windPower;
+
+    return [
+        'applicable' => true,
+        'value' => round($wc, 1),
+        'message' => '국제 표준식으로 계산된 체감추위입니다.',
+        'temp_c' => $temp,
+        'wind_kmh' => $windKmhRounded
     ];
 }
 
@@ -620,7 +672,7 @@ function formatTmFc($tmFc) {
 
   <div class="dashboard-layout">
     <aside class="sidebar">
-      <section class="sidebar-card sidebar-profile">
+      <section class="sidebar-card sidebar-profile simple-card">
         <p class="sidebar-label">안녕하세요</p>
         <p class="sidebar-user"><?php echo htmlspecialchars($user_id, ENT_QUOTES, 'UTF-8'); ?>님</p>
         <div class="sidebar-clock">
@@ -629,15 +681,32 @@ function formatTmFc($tmFc) {
         </div>
       </section>
 
-      <section class="sidebar-card sidebar-region">
-        <div>
-          <p class="sidebar-label">현재 지역</p>
-          <p class="sidebar-region-name"><?php echo htmlspecialchars($main_region_name, ENT_QUOTES, 'UTF-8'); ?></p>
-          <p class="sidebar-region-info"><?php echo htmlspecialchars($current_weather_info, ENT_QUOTES, 'UTF-8'); ?></p>
-        </div>
+      <section class="sidebar-card sidebar-region simple-card">
+        <p class="sidebar-label">현재 지역</p>
+        <p class="sidebar-region-name"><?php echo htmlspecialchars($main_region_name, ENT_QUOTES, 'UTF-8'); ?></p>
+        <p class="sidebar-region-info"><?php echo htmlspecialchars($current_weather_info, ENT_QUOTES, 'UTF-8'); ?></p>
         <?php if (!empty($saved_regions)): ?>
           <button type="button" class="sidebar-cta" id="sidebarManageRegions">지역 관리</button>
         <?php endif; ?>
+      </section>
+
+      <section class="sidebar-card sidebar-windchill simple-card" aria-live="polite">
+        <p class="sidebar-label">WIND CHILL (체감추위)</p>
+        <div class="windchill-value-row">
+          <?php if ($wind_chill_data['applicable'] && $wind_chill_data['value'] !== null): ?>
+            <span class="windchill-value"><?php echo number_format((float)$wind_chill_data['value'], 1); ?></span>
+            <span class="windchill-unit">°C</span>
+          <!-- // 만약 풍속이 4.8 km/h 미만이면 계산 불가 -->
+            <?php else: ?>
+            <span class="windchill-placeholder">계산 불가</span>
+          <?php endif; ?>
+        </div>
+        <p class="windchill-mini">
+          현재 온도: <?php echo formatWeatherMetric($wind_chill_data['temp_c'], '°C', 1); ?>
+        </p>
+        <p class="windchill-mini">
+          현재 풍속: <?php echo formatWeatherMetric($wind_chill_data['wind_kmh'], ' km/h', 1); ?>
+        </p>
       </section>
     </aside>
 
@@ -852,6 +921,7 @@ function formatTmFc($tmFc) {
         });
     }
 
+    // 페이지 전환 함수
     function switchPage(pageName) {
       document.querySelectorAll('.page-content').forEach(page => page.classList.remove('active'));
       const selectedPage = document.getElementById(`page-${pageName}`);
@@ -861,6 +931,7 @@ function formatTmFc($tmFc) {
       }
     }
 
+    // 상단 네비게이션 활성화 함수
     function setActiveTopNav(pageName) {
       document.querySelectorAll('.top-nav-item').forEach(item => item.classList.remove('active'));
       if (pageName) {

@@ -407,6 +407,10 @@ textarea {
   gap: 12px;
 }
 
+.simple-card {
+  gap: 10px;
+}
+
 /* 사이드바 라벨: 섹션 제목 스타일 */
 .sidebar-label {
   font-size: 0.75rem;
@@ -459,6 +463,13 @@ textarea {
   color: var(--text-secondary);
   font-size: 0.95rem;
 }
+
+.sidebar-windchill { gap: 8px; }
+.windchill-value-row { display: flex; align-items: baseline; gap: 6px; }
+.windchill-value { font-size: 1.6rem; font-weight: 700; color: var(--text); }
+.windchill-unit { font-size: 0.9rem; color: var(--text-secondary); }
+.windchill-placeholder { font-size: 0.95rem; color: var(--text-secondary); }
+.windchill-mini { margin: 0; color: var(--text-secondary); font-size: 0.9rem; line-height: 1.4; }
 
 /* 사이드바 CTA 버튼: 밑줄 스타일의 링크 버튼 */
 .sidebar-cta {
