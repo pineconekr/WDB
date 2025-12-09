@@ -9,17 +9,14 @@ function getClothingRecommendation($temp) {
     $wsd = isset($current_weather_detail['wsd']) ? (float)$current_weather_detail['wsd'] : 0;
     $windKmh = $wsd * 3.6; 
     $sensoryTemp = $temp;
-    $isWindChillApplied = false;
 
     if ($temp <= 10 && $windKmh >= 4.8) {
         $powWind = pow($windKmh, 0.16);
         $sensoryTemp = 13.12 + 0.6215 * $temp - 11.37 * $powWind + 0.3965 * $temp * $powWind;
         $sensoryTemp = round($sensoryTemp, 1);
-        $isWindChillApplied = true;
     }
 
     $comment = "";
-    $accessory = "";
 
     if ($temp >= 35) {
         $comment = "🔥폭염 경보! 에어컨 없인 위험해요. 민소매, 린넨 등 최대한 시원하고 얇은 옷 필수!";

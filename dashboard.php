@@ -80,7 +80,7 @@ if (!empty($saved_regions)) {
   $current_weather_info = $weatherPayload['current_info'];
   $current_weather_detail = $weatherPayload['current_detail'];
 
-  // 실시간 날씨 데이터 가져오기 (parameters: nx, ny 좌표)
+  // 실시간 날씨 데이터 가져오기 (파라미터: nx, ny 좌표)
   $realTimeData = fetchRealTimeWeather($nx, $ny);
   
   // 값 덮어쓰기 (실시간 날씨 데이터가 있으면 실시간으로 한번 더 덮어쓰기)
