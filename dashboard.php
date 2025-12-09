@@ -57,7 +57,6 @@ if (!empty($saved_regions)) {
 
   if ($requested_region_id !== null) {
     foreach ($saved_regions as $region) {
-      //
       if ((int) $region['id'] === $requested_region_id) {
         $main_region = $region;
         break;
@@ -78,6 +77,7 @@ if (!empty($saved_regions)) {
 
   $weatherPayload = fetchWeatherData($nx, $ny);
 
+  // 구글 차트용 데이터 설정
   $google_chart_data_json = $weatherPayload['chart_json'];
   $current_weather_info = $weatherPayload['current_info'];
   $current_weather_detail = $weatherPayload['current_detail'];
