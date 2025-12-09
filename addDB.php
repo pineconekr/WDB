@@ -2,14 +2,13 @@
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-// 1. DB 연결 정보
 $host = "localhost";
 $user = "root";
 $pass = "";
 $dbname = "team006";
 
 // 2. DB 연결
-// mysqli_report를 사용하여 에러를 예외(Exception)로 받겠다고 설정 (try-catch 사용 위함)
+// mysqli_report를 사용하여 에러를 예외로 받겠다고 설정 (try-catch 사용 위함)
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
 try {
@@ -21,7 +20,7 @@ try {
 
 echo "<h1>데이터베이스 구조 변경 (1:N RDBMS)</h1>";
 
-// 3. 쿼리 1: 'users' 테이블 정리 (열 삭제) - try-catch 적용
+// 3. users 테이블 정리 - try-catch 적용
 $sql_alter = "ALTER TABLE users
               DROP COLUMN region_name,
               DROP COLUMN region_nx,
@@ -37,7 +36,7 @@ try {
 } catch (mysqli_sql_exception $e) {
     // 오류가 발생했을 때 이곳으로 옵니다.
     
-    // 오류 코드가 1091번(Can't DROP... check that it exists)이면 무시하고 진행
+    // 오류 코드가 1091번: 삭제하려는 컬럼이 없을 때 무시하고 계속 진행
     if ($e->getCode() == 1091) {
         echo "<p style='color:orange;'>⚠️ 경고: 삭제하려는 열이 이미 없습니다. (이미 정리된 상태입니다.)</p>";
         echo "<p>➡️ 다음 단계로 계속 진행합니다.</p>";
@@ -77,15 +76,13 @@ try {
     }
 }
 
-/* ==========================================================
-    3) user_regions에 stnId 컬럼이 없다면 ADD COLUMN
-   ========================================================== */
+// user_regions에 stnId 컬럼이 없다면 ADD COLUMN
 echo "<h3>3. 'user_regions'에 stnId 컬럼 추가 확인...</h3>";
 
 try {
     $result = $conn->query("SHOW COLUMNS FROM user_regions LIKE 'stnId'");
     if ($result->num_rows === 0) {
-        // 컬럼 없음 → 추가
+        // 컬럼 없으면 추가
         $conn->query("ALTER TABLE user_regions ADD COLUMN stnId VARCHAR(16) NULL");
         echo "<p style='color:green;'>✅ stnId 컬럼 추가 완료!</p>";
     } else {
@@ -95,9 +92,7 @@ try {
     echo "<p style='color:red;'>❌ stnId 컬럼 체크 오류: " . $e->getMessage() . "</p>";
 }
 
-/* ==========================================================
-    4) stnId 컬럼이 NOT NULL 상태라면 NULL 허용으로 수정
-   ========================================================== */
+// stnId 컬럼이 NOT NULL 상태라면 NULL 허용으로 수정
 echo "<h3>4. 'stnId' NULL 허용 업데이트...</h3>";
 
 try {

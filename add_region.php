@@ -1,13 +1,14 @@
 <?php
-// 1. 세션 시작 및 로그인 확인
+// 세션 시작 및 로그인 확인
 session_start();
 if (!isset($_SESSION['user_id'])) {
+    // 1-1.로그인 하지 않았을 시 로그인화면으로 다시 이동
     header("Location: auth.html");
     exit;
 }
 $user_id = $_SESSION['user_id'];
 
-// 알림창/이동 함수 (공용)
+// 1-2.알림창/이동 함수
 function alert_redirect($message, $url) {
     header('Content-Type: text/html; charset=utf-8');
     echo "<script>
@@ -25,7 +26,7 @@ function alert_back($message) {
     exit;
 }
 
-// 2. 폼 데이터 받기
+// 폼 데이터 받기
 if (!isset($_POST['step1']) || empty($_POST['step1'])) {
     alert_back("시/도를 선택해주세요.");
 }
@@ -40,10 +41,9 @@ $step1 = $_POST['step1'];
 $step2 = $_POST['step2'];
 $step3 = $_POST['step3'];
 
-// 3. 지역명 생성
+// 지역명 생성
 $region_name = trim("$step1 $step2 $step3");
 
-// 4. DB 연결
 $host = "localhost";
 $user = "root";
 $pass = "";
@@ -55,7 +55,7 @@ if ($conn->connect_error) {
 }
 $conn->set_charset("utf8mb4");
 
-// 5. 중복 저장 방지
+// 중복 저장 방지
 $stmt = $conn->prepare("SELECT id FROM user_regions WHERE user_uid = ? AND region_name = ?");
 $stmt->bind_param("ss", $user_id, $region_name);
 $stmt->execute();
@@ -81,10 +81,10 @@ if (!$row) {
 
 $region_nx = (int)$row['grid_x'];
 $region_ny = (int)$row['grid_y'];
-$stnId = $row['stnId'];  // 추가됨
+$stnId = $row['stnId'];
 
 
-// 7. DB에 새 지역 "추가"
+// DB에 새 지역 "추가"
 $stmt = $conn->prepare("INSERT INTO user_regions (user_uid, region_name, region_nx, region_ny, stnId) VALUES (?, ?, ?, ?, ?)");
 $stmt->bind_param("ssiii", $user_id, $region_name, $region_nx, $region_ny, $stnId);
 

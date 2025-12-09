@@ -1,5 +1,5 @@
 <?php
-// [중요] 브라우저 캐시 방지 헤더 (가장 중요!)
+// 브라우저 캐시 방지 헤더
 // 이 설정이 있어야 '뒤로 가기'나 '새로고침' 시 옛날 데이터가 아닌 최신 데이터를 가져옵니다.
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Cache-Control: post-check=0, pre-check=0", false);
@@ -7,7 +7,7 @@ header("Pragma: no-cache");
 
 session_start();
 
-// [중요] 지역이 많으면 API 호출 시간이 길어지므로 PHP 실행 시간 제한을 풉니다.
+// 지역이 많으면 API 호출 시간이 길어지므로 PHP 실행 시간 제한을 풉니다.
 set_time_limit(0);
 
 if (!isset($_SESSION['user_id'])) {
@@ -17,7 +17,6 @@ if (!isset($_SESSION['user_id'])) {
 date_default_timezone_set('Asia/Seoul');
 $user_id = $_SESSION['user_id'];
 
-// 1. DB 연결
 $host = "localhost";
 $user = "root";
 $pass = "";
@@ -29,7 +28,7 @@ if ($conn->connect_error) {
     exit("DB 연결 실패");
 }
 
-// 2. 사용자의 저장된 지역 목록 가져오기
+// 사용자의 저장된 지역 목록 가져오기
 $sql = "SELECT id, region_name, region_nx, region_ny FROM user_regions WHERE user_uid = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("s", $user_id);
@@ -55,7 +54,7 @@ if (empty($regions)) {
     exit;
 }
 
-// 3. 단순 기온/날씨 정보 수집용 헬퍼 (초급 개발자 수준으로 단순화)
+// 단순 기온/날씨 정보 수집용 헬퍼
 function fetchRegionSnapshot($nx, $ny) {
     $serviceKey = "bbc2f96d627a4f50f836e44d783c2cb40633431aae9315876336c6bd9afd8432";
     $endpoint = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst";
@@ -65,6 +64,7 @@ function fetchRegionSnapshot($nx, $ny) {
     $baseDate = $now->format('Ymd');
     $baseTime = '2300';
 
+    // 가장 최근 발표된 기상정보 가져오도록 매핑 (foreach - if문까지)
     $baseTimesMap = [
         '0210' => '0200', '0510' => '0500', '0810' => '0800', '1110' => '1100',
         '1410' => '1400', '1710' => '1700', '2010' => '2000', '2310' => '2300'
@@ -147,7 +147,7 @@ function detectTemperatureState($value) {
     return 'neutral';
 }
 
-// 4. 각 지역별 데이터 수집 (현재 기온과 상태만)
+// 각 지역별 데이터 수집 (현재 기온과 상태만)
 $ranking_data = [];
 $referenceDate = null;
 $referenceTime = null;
@@ -163,7 +163,7 @@ foreach ($regions as $region) {
 
         $ranking_data[] = [
             'name' => $region['region_name'],
-            'snapshot' => $snapshot,
+            'snapshot' => $snapshot,    //기온정보 담기
             'status' => 'ok'
         ];
     } else {
@@ -177,6 +177,7 @@ foreach ($regions as $region) {
 usort($ranking_data, function ($a, $b) {
     $aTemp = ($a['status'] === 'ok' && isset($a['snapshot']['temp'])) ? $a['snapshot']['temp'] : -999;
     $bTemp = ($b['status'] === 'ok' && isset($b['snapshot']['temp'])) ? $b['snapshot']['temp'] : -999;
+    // 내림차순 정렬
     return $bTemp <=> $aTemp;
 });
 

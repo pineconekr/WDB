@@ -1,17 +1,15 @@
 <?php
-/**
- * 기온(체감온도 반영)에 따른 옷차림 추천 함수 (dashboard.php 로직 100% 일치 버전)
- * @param float $temp 현재 기온
- * @return string 추천 옷차림 멘트
- */
 function getClothingRecommendation($temp) {
-    global $current_weather_detail;
+    global $current_weather_detail; //외부 변수 가져오기
+    //풍속 단위 변환 (m/s -> km/h)
     $wsd = isset($current_weather_detail['wsd']) ? (float)$current_weather_detail['wsd'] : 0;
-    $windKmh = $wsd * 3.6; 
+    $windKmh = $wsd * 3.6; //체감온도를 현재 기온으로 설정
     $sensoryTemp = $temp;
 
+    //체감온도 조건문 (계산)
     if ($temp <= 10 && $windKmh >= 4.8) {
         $powWind = pow($windKmh, 0.16);
+        // 기상청 체감온도 공식
         $sensoryTemp = 13.12 + 0.6215 * $temp - 11.37 * $powWind + 0.3965 * $temp * $powWind;
         $sensoryTemp = round($sensoryTemp, 1);
     }

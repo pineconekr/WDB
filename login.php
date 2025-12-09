@@ -6,13 +6,11 @@ session_start();
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-// DB 연결 정보
 $host = "localhost";
 $user = "root";
 $pass = "";
 $dbname = "team006";
 
-// 알림창/이동 함수 (signup.php와 동일)
 function alert_back($message) {
     header('Content-Type: text/html; charset=utf-8');
     echo "<script>
@@ -31,7 +29,6 @@ function alert_redirect($message, $url) {
     exit;
 }
 
-// DB 연결 시작
 $conn = new mysqli($host, $user, $pass, $dbname);
 
 // 연결 오류 체크
@@ -55,7 +52,7 @@ $stmt->bind_param("s", $uid);
 $stmt->execute();
 $stmt->store_result();
 
-// 만약 아이디가 존재하지 않는다면
+// 아이디가 존재하지 않을 시 문구 출력
 if ($stmt->num_rows === 0) {
     alert_back("존재하지 않는 아이디입니다.");
 }

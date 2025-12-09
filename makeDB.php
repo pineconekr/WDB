@@ -2,7 +2,7 @@
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-//DB 연결 정보
+//DB 연결
 $host = "localhost";
 $user = "root";
 $pass = "";
@@ -50,8 +50,7 @@ if ($conn->query($sql_create_table) === TRUE) {
 
 echo "<hr>";
 echo "<h2> 모든 설정이 완료되었습니다.</h2>";
-echo "<p>이제 <a href='auth.html'>회원가입 페이지</a>로 이동하여 테스트하세요.</p>";
-echo "<p style='color:red; font-weight:bold;'>[중요] 이 'setup_db.php' 파일은 보안을 위해 지금 바로 삭제해주세요!</p>";
+echo "<p><a href='auth.html'>회원가입 페이지</a>로 이동하세요.</p>";
 
 $conn->close();
 
