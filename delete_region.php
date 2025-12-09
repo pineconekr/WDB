@@ -23,7 +23,7 @@ function alert_back($message) {
     exit;
 }
 
-// 폼 데이터 받기
+// 폼 데이터 받기 
 // 'region_id' 값이 없으면 뒤로 돌려보냄
 if (!isset($_POST['region_id']) || empty($_POST['region_id'])) {
     alert_back("삭제할 지역 ID가 없습니다.");

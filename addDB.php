@@ -7,7 +7,6 @@ $user = "root";
 $pass = "";
 $dbname = "team006";
 
-// 2. DB 연결
 // mysqli_report를 사용하여 에러를 예외로 받겠다고 설정 (try-catch 사용 위함)
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
@@ -20,7 +19,7 @@ try {
 
 echo "<h1>데이터베이스 구조 변경 (1:N RDBMS)</h1>";
 
-// 3. users 테이블 정리 - try-catch 적용
+// users 테이블 정리 - try-catch 적용
 $sql_alter = "ALTER TABLE users
               DROP COLUMN region_name,
               DROP COLUMN region_nx,
@@ -46,7 +45,7 @@ try {
     }
 }
 
-// 4. 'user_regions' 새 테이블 생성 - try-catch 적용
+// 'user_regions' 새 테이블 생성 - try-catch 적용
 $sql_create = "CREATE TABLE user_regions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_uid VARCHAR(50) NOT NULL,

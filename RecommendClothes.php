@@ -9,7 +9,7 @@ function getClothingRecommendation($temp) {
     //체감온도 조건문 (계산)
     if ($temp <= 10 && $windKmh >= 4.8) {
         $powWind = pow($windKmh, 0.16);
-        // 기상청 체감온도 공식
+        // 기상청 체감온도 공식 
         $sensoryTemp = 13.12 + 0.6215 * $temp - 11.37 * $powWind + 0.3965 * $temp * $powWind;
         $sensoryTemp = round($sensoryTemp, 1);
     }

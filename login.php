@@ -31,7 +31,7 @@ function alert_redirect($message, $url) {
 
 $conn = new mysqli($host, $user, $pass, $dbname);
 
-// 연결 오류 체크
+// 연결 오류 체크 
 if ($conn->connect_error) {
     alert_back("DB 연결에 실패했습니다. (Error: " . $conn->connect_errno . ")");
 }

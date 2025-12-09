@@ -28,7 +28,7 @@ if ($conn->connect_error) {
     exit("DB 연결 실패");
 }
 
-// 사용자의 저장된 지역 목록 가져오기
+// 사용자의 저장된 지역 목록 가져오기 
 $sql = "SELECT id, region_name, region_nx, region_ny FROM user_regions WHERE user_uid = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("s", $user_id);

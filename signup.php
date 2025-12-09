@@ -62,7 +62,7 @@ if ($stmt->num_rows > 0) {
 }
 $stmt->close();
 
-// 비밀번호 암호화
+// 비밀번호 암호화 
 $hashed_pwd = password_hash($pwd, PASSWORD_DEFAULT);
 
 // DB에 회원정보 저장

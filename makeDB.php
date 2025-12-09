@@ -7,7 +7,7 @@ $host = "localhost";
 $user = "root";
 $pass = "";
 
-//DB 서버에 연결
+//DB 서버에 연결 
 $conn = new mysqli($host, $user, $pass);
 
 //연결 오류 체크
