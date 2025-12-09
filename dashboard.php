@@ -51,11 +51,13 @@ $wind_chill_data = [
   'wind_kmh' => null
 ];
 
-
+// 지역 설정 시 날씨 데이터 배열 foreach 로드
 if (!empty($saved_regions)) {
   $main_region = null;
+
   if ($requested_region_id !== null) {
     foreach ($saved_regions as $region) {
+      //
       if ((int) $region['id'] === $requested_region_id) {
         $main_region = $region;
         break;
